@@ -1,0 +1,21 @@
+{{define "content"}}
+<section class="auth-wrap">
+  <div class="card auth-card auth-wide">
+    <h1>忘记密码</h1>
+    <p class="muted">学生请使用“辅助重置”通道填写学号和姓名；教职工请核验用户名和绑定手机号。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="/forgot-password" class="stack" data-kind-form>
+      {{template "csrf" .}}
+      <div class="segmented" role="radiogroup" aria-label="账号类型">
+        <label><input type="radio" name="kind" value="student" {{if ne .Kind "staff"}}checked{{end}}> 学生</label>
+        <label><input type="radio" name="kind" value="staff" {{if eq .Kind "staff"}}checked{{end}}> 教职工</label>
+      </div>
+      <label class="field"><span>学号或用户名</span><input name="ident" value="{{.Ident}}" autocomplete="username" required></label>
+      <label class="field" data-kind="student"><span>姓名</span><input name="name" value="{{.Name}}" autocomplete="name"><small>必须与导入时一致，用于学生辅助重置。</small></label>
+      <label class="field" data-kind="staff"><span>绑定手机号</span><input name="phone" value="{{.Phone}}" inputmode="tel" autocomplete="tel"><small>仅教职工需要填写，用于核验身份。</small></label>
+      <button class="btn btn-primary btn-block" type="submit">继续</button>
+    </form>
+    <div class="auth-links"><a href="/recover">学生辅助重置</a><a href="/staff/login">返回登录</a></div>
+  </div>
+</section>
+{{end}}

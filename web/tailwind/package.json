@@ -1,0 +1,14 @@
+{
+  "name": "campus-leave-pass-tailwind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build-time Tailwind CSS pipeline for the campus leave pass web UI.",
+  "scripts": {
+    "build": "tailwindcss -i ./input.css -o ../../internal/web/static/app.css --minify",
+    "watch": "tailwindcss -i ./input.css -o ../../internal/web/static/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

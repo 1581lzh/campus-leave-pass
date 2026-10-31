@@ -1,0 +1,55 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>安全与限流</h1><p class="muted">限流键只保存 HMAC。解封只清除对应 IP 的登录/注册限流，不影响其他安全记录。</p></div><div class="head-actions"><a class="btn" href="/admin/audit">查看审计</a><a class="btn" href="/admin">返回概览</a></div></section>
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+<div class="card">
+  <h2>解除 IP 限制</h2>
+  <form method="post" action="/admin/security/unlock" class="rowform">
+    {{template "csrf" .}}
+    <label class="field grow"><span>要解封的 IP</span><input name="ip" placeholder="例如 203.0.113.10" required></label>
+    <button class="btn btn-danger" type="submit">解除该 IP 限制</button>
+  </form>
+  <p class="reason-text">仅在确认误伤时使用。解封后该 IP 可立即重新登录或注册；其他 IP 的安全记录不受影响。</p>
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>当前锁定</h2><span class="badge">{{len .Locked}}</span></div>
+  {{if .Locked}}
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>范围</th><th>限流键</th><th>锁定至</th><th>失败次数</th><th>更新时间</th></tr></thead>
+    <tbody>
+    {{range .Locked}}
+    <tr>
+      <td data-label="范围">{{if eq .Scope "login_ip"}}登录{{else if eq .Scope "login_global_ip"}}登录（全局限流）{{else if eq .Scope "register_ip"}}注册{{else if eq .Scope "reset_ip"}}重置{{else}}{{.Scope}}{{end}}</td>
+      <td data-label="限流键"><code class="muted">{{.Key}}</code></td>
+      <td data-label="锁定至">{{fmtDateTime .Until}}</td>
+      <td data-label="失败次数">{{.Count}}</td>
+      <td data-label="更新时间">{{fmtDateTime .Updated}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>最近注册尝试</h2><span class="badge">{{len .Attempts}}</span></div>
+  {{if .Attempts}}
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>时间</th><th>IP</th><th>角色</th><th>结果</th><th>原因</th></tr></thead>
+    <tbody>
+    {{range .Attempts}}
+    <tr>
+      <td data-label="时间">{{fmtDateTime .CreatedAt}}</td>
+      <td data-label="IP"><code class="muted">{{.IP}}</code></td>
+      <td data-label="角色">{{if .Role}}{{roleName .Role}}{{else}}—{{end}}</td>
+      <td data-label="结果">{{if .Success}}<span class="badge badge-approved">已成功</span>{{else}}<span class="badge badge-rejected">失败</span>{{end}}</td>
+      <td data-label="原因">{{if .Reason}}{{.Reason}}{{else}}—{{end}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

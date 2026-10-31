@@ -1,0 +1,65 @@
+{{define "content"}}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">学生首页</p>
+    <h1>你好，{{.Student.Name}}</h1>
+    <p class="muted">{{.Student.StudentNo}}{{if .HasClass}} · {{.Class.Name}}{{if .Student.Dorm}} · {{.Student.Dorm}}{{end}}{{end}}</p>
+  </div>
+  <div class="head-actions">
+    {{if .CanSubmit}}<a class="btn btn-primary" href="/s/leave/new">新建请假</a>{{else}}<span class="btn btn-primary" aria-disabled="true" data-reason="{{.SubmitReason}}" tabindex="0">新建请假</span>{{end}}
+    <a class="btn" href="/s/leaves">全部请假</a>
+  </div>
+</section>
+
+{{if not .CanSubmit}}<div class="alert alert-warn">{{.SubmitReason}}</div>{{end}}
+
+<div class="stats">
+  <div class="stat"><span class="stat-num">{{.Pending}}</span><span class="stat-label">待审批</span></div>
+  <div class="stat"><span class="stat-num">{{.Approved}}</span><span class="stat-label">已批准</span></div>
+  <div class="stat"><span class="stat-num">{{len .Leaves}}</span><span class="stat-label">全部记录</span></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>最近请假</h2><a href="/s/leaves">查看全部</a></div>
+    {{if .Leaves}}
+    <ul class="list">
+      {{range .Leaves}}
+      <li>
+        <a class="list-main" href="/s/leaves/{{.ID}}">
+          <span class="list-title">{{fmtMonthDay .StartAt}} → {{fmtMonthDay .EndAt}}</span>
+          <span class="list-sub">{{.ClassName}} · {{.Dorm}} · 提交于 {{fmtDateTime .CreatedAt}}</span>
+        </a>
+        <span class="list-side">{{template "leave_status" .}}</span>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}{{template "empty"}}{{end}}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>班级与审批人</h2></div>
+    {{if .HasClass}}
+      <dl class="detail-list">
+        <div><dt>班级</dt><dd>{{.Class.Name}}</dd></div>
+        <div><dt>专业系</dt><dd>{{.Class.Department}}</dd></div>
+        <div><dt>班主任</dt><dd>{{if .Class.TeacherName}}{{.Class.TeacherName}}{{else}}<span class="danger-text">暂无</span>{{end}}</dd></div>
+        <div><dt>辅导员</dt><dd>{{if .Class.CounselorName}}{{.Class.CounselorName}}{{else}}<span class="danger-text">暂无</span>{{end}}</dd></div>
+      </dl>
+      {{if or (not .Class.TeacherName) (not .Class.CounselorName)}}<p class="muted">审批人缺失时仍可提交，但可能无人及时审批；24 小时未审批会自动驳回。</p>{{end}}
+    {{else}}
+      <p class="muted">你当前没有班级。请联系管理员将你转入班级后再提交请假。</p>
+    {{end}}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>最新通知</h2><a href="/s/notifications">通知中心</a></div>
+  {{if .Notices}}
+  <ul class="list">
+    {{range .Notices}}
+    <li><div class="list-main"><span class="list-title">{{.Title}}</span><span class="list-sub">{{fmtDateTime .CreatedAt}}</span><span class="list-sub">{{.Body}}</span></div>{{if .Link}}<a class="btn btn-sm" href="{{.Link}}">查看</a>{{end}}</li>
+    {{end}}
+  </ul>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

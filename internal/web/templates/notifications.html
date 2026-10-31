@@ -1,0 +1,24 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">消息</p><h1>通知中心</h1><p class="muted">系统通知保留 30 天；未读数量显示在导航中。</p></div>
+  <div class="head-actions">
+    <form method="post" action="{{.Action}}" class="inline">{{template "csrf" .}}<button class="btn" type="submit">全部标为已读</button></form>
+  </div>
+</section>
+<div class="card">
+  {{if .Notices}}
+  <ul class="list notices">
+    {{range .Notices}}
+    <li class="{{if not .ReadAt}}unread{{end}}">
+      <div class="list-main">
+        <span class="list-title">{{if not .ReadAt}}<span class="unread-dot" aria-label="未读"></span>{{end}}{{.Title}}</span>
+        <span class="list-sub">{{fmtDateTime .CreatedAt}}</span>
+        <span class="list-sub pre">{{.Body}}</span>
+      </div>
+      {{if .Link}}<a class="btn btn-sm" href="{{.Link}}">查看</a>{{end}}
+    </li>
+    {{end}}
+  </ul>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

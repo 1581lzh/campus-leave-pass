@@ -1,0 +1,27 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>系统概览</h1><p class="muted">日常请假审批不依赖管理员在线；这里只处理注册码、班级异常和数据修复。</p></div><div class="head-actions"><a class="btn" href="/admin/leaves">请假查询</a><a class="btn btn-primary" href="/admin/classes">班级管理</a></div></section>
+<div class="stats">
+  <a class="stat" href="/admin/classes"><span class="stat-num">{{.Stats.UnclaimedClasses}}</span><span class="stat-label">待认领班级</span></a>
+  <a class="stat" href="/admin/users?role=student"><span class="stat-num">{{.Stats.ActiveStudents}}</span><span class="stat-label">在读学生</span></a>
+  <a class="stat" href="/admin/leaves?status=pending"><span class="stat-num">{{.Stats.PendingLeaves}}</span><span class="stat-label">待审批请假</span></a>
+  <a class="stat" href="/admin/recover"><span class="stat-num">{{.Stats.PendingResets}}</span><span class="stat-label">待处理重置</span></a>
+  <a class="stat" href="/admin/settings/registration-codes"><span class="stat-num">{{.Stats.AvailableCodes}}</span><span class="stat-label">可用注册码</span></a>
+  <a class="stat" href="/admin/imports"><span class="stat-num">{{.Stats.RecentImports}}</span><span class="stat-label">近 7 天导入批次</span></a>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>待认领班级</h2><a href="/admin/classes">全部班级</a></div>
+    {{if .Unclaimed}}
+    <ul class="list">{{range .Unclaimed}}<li><div class="list-main"><a class="list-title" href="/admin/classes/{{.ID}}">{{.Name}}</a><span class="list-sub">{{.Department}} · {{.StudentCount}} 名学生 · 清理截止 {{fmtDateTime .DeleteDueAt}}</span></div><span class="badge badge-pending">{{daysLeft .DeleteDueAt}} 天</span></li>{{end}}</ul>
+    {{else}}<p class="muted">没有待认领班级。</p>{{end}}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>保留假条快照</h2><a href="/archived/leaves">查看假条</a></div>
+    {{if .Archived}}<ul class="list">{{range .Archived}}<li><div class="list-main"><span class="list-title">{{.ClassName}}</span><span class="list-sub">{{.LeaveCount}} 条假条 · 保留至 {{fmtDate .RetainUntil}}</span></div></li>{{end}}</ul>{{else}}<p class="muted">暂无已清理班级。</p>{{end}}
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card"><div class="card-head"><h2>最近导入</h2><a href="/admin/imports">全部</a></div>{{if .Imports}}<ul class="list">{{range .Imports}}<li><div class="list-main"><span class="list-title">{{.ClassName}}{{if not .ClassName}}（班级已解散）{{end}}</span><span class="list-sub">{{.ImporterName}} · {{.FileName}} · 成功 {{.CreatedCount}} / 失败 {{.ErrorCount}} · {{fmtDateTime .CreatedAt}}</span></div></li>{{end}}</ul>{{else}}<p class="muted">暂无导入记录。</p>{{end}}</div>
+  <div class="card"><div class="card-head"><h2>最近管理操作</h2><a href="/admin/audit">审计</a></div>{{if .Audit}}<ul class="list">{{range .Audit}}<li><div class="list-main"><span class="list-title">{{.Action}}</span><span class="list-sub">{{.ActorName}} · {{.Detail}} · {{fmtDateTime .CreatedAt}}</span></div></li>{{end}}</ul>{{else}}<p class="muted">暂无审计记录。</p>{{end}}</div>
+</div>
+{{end}}

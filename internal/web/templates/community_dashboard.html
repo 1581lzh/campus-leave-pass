@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">社区老师</p><h1>社区工作台</h1><p class="muted">负责楼栋：{{if .Buildings}}{{range $i, $b := .Buildings}}{{if $i}}、{{end}}{{$b}}{{end}}{{else}}尚未设置{{end}}</p></div><div class="head-actions"><a class="btn" href="/c/buildings">设置负责楼栋</a><a class="btn btn-primary" href="/c/leaves">请假查询</a></div></section>
+{{if not .Buildings}}<div class="alert alert-warn">你还没有设置负责楼栋，因此看不到任何学生和请假。请先在“负责楼栋”中选择或填写楼栋名。</div>{{end}}
+<div class="card">
+  <div class="card-head"><h2>近期已批准请假</h2><a href="/c/leaves">全部</a></div>
+  {{if .Upcoming}}
+  <table><thead><tr><th>学生</th><th>楼栋 / 宿舍</th><th>班级</th><th>请假时间</th><th></th></tr></thead><tbody>
+  {{range .Upcoming}}<tr><td>{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td><td>{{.DormBuilding}}<br><span class="muted">{{.DormRoom}}</span></td><td>{{.ClassName}}</td><td>{{fmtDateTime .StartAt}} 至 {{fmtDateTime .EndAt}}</td><td><a class="btn btn-sm" href="/c/leaves/{{.ID}}">详情</a></td></tr>{{end}}
+  </tbody></table>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+<div class="card"><h2>常用入口</h2><div class="actions"><a class="btn" href="/c/students">学生宿舍查询</a><a class="btn" href="/c/recover">辅助重置审批</a><a class="btn" href="/archived/leaves">保留假条</a><a class="btn" href="/c/notifications">通知中心</a></div></div>
+{{end}}

@@ -1,0 +1,29 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>{{.Leave.StudentName}} · {{.Leave.ClassName}}</h1><p class="muted">{{.Leave.StudentNo}} · {{.Leave.Dorm}} · 假条编号 {{.Leave.ID}} · 提交于 {{fmtDateTime .Leave.CreatedAt}}</p></div><div class="head-actions"><a class="btn" href="/admin/leaves">返回查询</a></div></section>
+<div class="grid-2">
+  <div class="card"><h2>假条信息</h2><dl class="detail-list">
+    <div><dt>状态</dt><dd>{{template "leave_status" .Leave}} {{if .Leave.Decision}}· {{decisionText .Leave}}{{end}}</dd></div>
+    <div><dt>请假时间</dt><dd>{{fmtDateTime .Leave.StartAt}} 至 {{fmtDateTime .Leave.EndAt}}</dd></div>
+    <div><dt>提交时间</dt><dd>{{fmtDateTime .Leave.CreatedAt}}</dd></div>
+    {{if and .Leave.CreatedBy (ne .Leave.CreatedBy .Leave.StudentUserID)}}<div><dt>提交方式</dt><dd>老师代提交</dd></div>{{end}}
+    <div><dt>审批截止</dt><dd>{{fmtDateTime .Leave.DeadlineAt}}</dd></div>
+    <div><dt>联系电话</dt><dd>{{if .Leave.ContactPhone}}{{.Leave.ContactPhone}}{{else}}—{{end}}</dd></div>
+    <div><dt>班主任</dt><dd>{{.Leave.TeacherName}}</dd></div>
+    <div><dt>辅导员</dt><dd>{{.Leave.CounselorName}}</dd></div>
+    <div><dt>审批人</dt><dd>{{if .Leave.ApproverName}}{{.Leave.ApproverName}}{{else}}—{{end}}</dd></div>
+    {{if .Leave.RejectReason}}<div><dt>驳回原因</dt><dd>{{.Leave.RejectReason}}</dd></div>{{end}}
+    {{if .Leave.CancelReason}}<div><dt>取消原因</dt><dd>{{.Leave.CancelReason}}</dd></div>{{end}}
+  </dl></div>
+  <div class="card"><h2>请假原因与意见</h2><p class="pre">{{.Leave.Reason}}</p>{{if .Leave.MajorOpinion}}<h3>班主任意见</h3><p class="pre">{{.Leave.MajorOpinion}}</p>{{end}}{{if .Leave.DeptOpinion}}<h3>辅导员意见</h3><p class="pre">{{.Leave.DeptOpinion}}</p>{{end}}</div>
+</div>
+<div class="card">
+  <h2>管理员操作</h2>
+  <p class="muted">管理员不参与审批。待审批假条可取消；任意状态可物理删除，删除后不可恢复。正常生命周期无需管理员操作。</p>
+  {{if eq .Leave.Status "pending"}}
+  <form method="post" action="/admin/leaves/{{.Leave.ID}}/cancel" class="rowform" data-confirm="取消后学生会收到通知，确定取消这条待审批请假吗？">{{template "csrf" .}}<label class="field grow"><span>取消原因（可选）</span><input name="reason" maxlength="200"></label><button class="btn btn-danger" type="submit">取消待审批请假</button></form>
+  {{end}}
+  <hr>
+  <form method="post" action="/admin/leaves/{{.Leave.ID}}/delete" class="rowform" data-confirm="物理删除后不可恢复，也不会保留审计记录。确定删除吗？">{{template "csrf" .}}<label class="check"><input type="checkbox" name="confirm" value="1" required> 我已确认物理删除且不可恢复</label><button class="btn btn-danger" type="submit">物理删除假条</button></form>
+</div>
+{{if .Edits}}<div class="card"><h2>时间修改记录</h2><table><thead><tr><th>修改人</th><th>原时间</th><th>新时间</th><th>时间</th></tr></thead><tbody>{{range .Edits}}<tr><td>{{.EditorName}}</td><td>{{fmtDateTime .OldStart}} 至 {{fmtDateTime .OldEnd}}</td><td>{{fmtDateTime .NewStart}} 至 {{fmtDateTime .NewEnd}}</td><td>{{fmtDateTime .CreatedAt}}</td></tr>{{end}}</tbody></table></div>{{end}}
+{{end}}

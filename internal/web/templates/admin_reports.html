@@ -1,0 +1,40 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">管理员</p><h1>汇总报表</h1><p class="muted">按请假单提交时的楼栋、班级、班主任、辅导员快照汇总；共 {{.Total}} 条，不含已清理班级的保留假条。</p></div>
+  <div class="head-actions"><a class="btn" href="/admin/leaves">请假查询</a><a class="btn" href="/archived/leaves">保留假条</a></div>
+</section>
+<div class="actions">
+  <a class="btn{{if eq .Dimension "building"}} btn-primary{{end}}" href="/admin/reports?dimension=building">按楼栋</a>
+  <a class="btn{{if eq .Dimension "class"}} btn-primary{{end}}" href="/admin/reports?dimension=class">按班级</a>
+  <a class="btn{{if eq .Dimension "teacher"}} btn-primary{{end}}" href="/admin/reports?dimension=teacher">按班主任</a>
+  <a class="btn{{if eq .Dimension "counselor"}} btn-primary{{end}}" href="/admin/reports?dimension=counselor">按辅导员</a>
+</div>
+<div class="stats">
+  <div class="stat"><span class="stat-num">{{.Total}}</span><span class="stat-label">假条总数</span></div>
+  <div class="stat"><span class="stat-num">{{.Approved}}</span><span class="stat-label">已批准</span></div>
+  <div class="stat"><span class="stat-num">{{.Pending}}</span><span class="stat-label">待审批</span></div>
+  <div class="stat"><span class="stat-num">{{.Rejected}}</span><span class="stat-label">已驳回</span></div>
+  <div class="stat"><span class="stat-num">{{.Cancelled}}</span><span class="stat-label">已取消</span></div>
+  <div class="stat"><span class="stat-num">{{pct .Approved .Total}}%</span><span class="stat-label">通过率</span></div>
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>分组明细</h2><span class="muted">按假条数量从多到少排列</span></div>
+  {{if .Rows}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>分组</th><th>总数</th><th>已批准</th><th>待审批</th><th>已驳回</th><th>已取消</th><th>通过率</th></tr></thead>
+    <tbody>
+    {{range .Rows}}<tr>
+      <td data-label="分组">{{.Key}}</td>
+      <td data-label="总数">{{.Total}}</td>
+      <td data-label="已批准">{{.Approved}}</td>
+      <td data-label="待审批">{{.Pending}}</td>
+      <td data-label="已驳回">{{.Rejected}}</td>
+      <td data-label="已取消">{{.Cancelled}}</td>
+      <td data-label="通过率">{{pct .Approved .Total}}%</td>
+    </tr>{{end}}
+    </tbody>
+    <tfoot><tr><th>合计</th><th>{{.Total}}</th><th>{{.Approved}}</th><th>{{.Pending}}</th><th>{{.Rejected}}</th><th>{{.Cancelled}}</th><th>{{pct .Approved .Total}}%</th></tr></tfoot>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

@@ -1,0 +1,21 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">社区老师</p><h1>请假查询</h1><p class="muted">只显示你负责楼栋的已批准请假，共 {{.Total}} 条；可查看请假原因和审批意见，但不显示联系电话。</p></div><div class="head-actions"><a class="btn" href="/c">返回首页</a></div></section>
+<div class="card">
+  <form method="get" action="/c/leaves" class="filters">
+    <label class="field"><span>请假开始 起</span><input type="date" name="start_from" value="{{.Filter.StartFrom}}"></label>
+    <label class="field"><span>请假开始 止</span><input type="date" name="start_to" value="{{.Filter.StartTo}}"></label>
+    <label class="field"><span>楼栋</span><select name="building"><option value="">全部</option>{{range .Buildings}}<option value="{{.}}" {{if eq $.Filter.Building .}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+    <label class="field"><span>班级</span><input name="class" value="{{.Filter.ClassName}}"></label>
+    <label class="field"><span>关键词</span><input name="q" value="{{.Filter.Keyword}}" placeholder="姓名/学号"></label>
+    <div class="filter-actions"><button class="btn btn-primary" type="submit">筛选</button><a class="btn" href="/c/leaves">清除</a></div>
+  </form>
+</div>
+<div class="card table-card">
+{{if .Leaves}}
+<table><thead><tr><th>学生</th><th>宿舍</th><th>班级</th><th>请假时间</th><th></th></tr></thead><tbody>
+{{range .Leaves}}<tr><td>{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td><td>{{.DormBuilding}}-{{.DormRoom}}</td><td>{{.ClassName}}</td><td>{{fmtDateTime .StartAt}} 至 {{fmtDateTime .EndAt}}</td><td><a class="btn btn-sm" href="/c/leaves/{{.ID}}">详情</a></td></tr>{{end}}
+</tbody></table>
+<div class="pager"><span>第 {{.PageNo}} / {{.Pages}} 页 · 共 {{.Total}} 条</span><div>{{if gt .PageNo 1}}<a class="btn btn-sm" href="?{{queryPage .Query (add .PageNo -1)}}">上一页</a>{{end}}{{if lt .PageNo .Pages}}<a class="btn btn-sm" href="?{{queryPage .Query (add .PageNo 1)}}">下一页</a>{{end}}</div></div>
+{{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

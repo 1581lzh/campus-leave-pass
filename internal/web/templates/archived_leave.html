@@ -1,0 +1,79 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">保留假条</p><h1>{{.Leave.StudentName}} · {{.Leave.ClassName}}</h1><p class="muted">假条编号 {{.Leave.ID}} · 保留至 {{fmtDate .Leave.RetainUntil}}</p></div><div class="head-actions"><a class="btn" href="/archived/leaves">返回列表</a></div></section>
+<div class="alert alert-warn">班级已清理，二维码和代理链接已失效；本页只读，不能审批/驳回/取消/改时间。</div>
+<div class="grid-2">
+  <div class="card">
+    <h2>假条信息</h2>
+    <dl class="detail-list">
+      <div><dt>姓名</dt><dd>{{.Leave.StudentName}}</dd></div>
+      <div><dt>学号</dt><dd>{{.Leave.StudentNo}}</dd></div>
+      <div><dt>班级 / 专业系</dt><dd>{{.Leave.ClassName}}{{if .Leave.Department}} · {{.Leave.Department}}{{end}}</dd></div>
+      <div><dt>原班主任</dt><dd>{{if .Leave.TeacherName}}{{.Leave.TeacherName}}{{else}}—{{end}}</dd></div>
+      <div><dt>辅导员</dt><dd>{{if .Leave.CounselorName}}{{.Leave.CounselorName}}{{else}}—{{end}}</dd></div>
+      <div><dt>宿舍</dt><dd>{{dormString .Leave.DormBuilding .Leave.DormRoom}}</dd></div>
+      <div><dt>请假起止</dt><dd>{{fmtDateTime .Leave.StartAt}} 至 {{fmtDateTime .Leave.EndAt}}</dd></div>
+      <div><dt>提交时间</dt><dd>{{fmtDateTime .Leave.CreatedAt}}</dd></div>
+    {{if and .Leave.CreatedBy (ne .Leave.CreatedBy .Leave.StudentUserID)}}<div><dt>提交方式</dt><dd>老师代提交</dd></div>{{end}}
+      <div><dt>状态</dt><dd>{{template "leave_status" .Leave}}{{if .Leave.Decision}} · {{decisionText .Leave}}{{end}}</dd></div>
+      <div><dt>清理时间</dt><dd>{{fmtDateTime .Leave.ArchivedAt}}</dd></div>
+      <div><dt>保留至</dt><dd>{{fmtDate .Leave.RetainUntil}}</dd></div>
+      <div><dt>联系电话</dt><dd>{{if .ShowPhone}}{{if .Leave.ContactPhone}}{{.Leave.ContactPhone}}{{else}}—{{end}}{{else}}<span class="muted">按权限隐藏</span>{{end}}</dd></div>
+    </dl>
+  </div>
+  <div class="card">
+    <h2>请假原因与审批意见</h2>
+    <h3>请假原因</h3>
+    <p class="pre">{{.Leave.Reason}}</p>
+    {{if .Leave.MajorOpinion}}<h3>班主任意见</h3><p class="pre">{{.Leave.MajorOpinion}}</p>{{end}}
+    {{if .Leave.DeptOpinion}}<h3>辅导员意见</h3><p class="pre">{{.Leave.DeptOpinion}}</p>{{end}}
+    {{if .Leave.RejectReason}}<h3>驳回原因</h3><p class="pre danger-text">{{.Leave.RejectReason}}</p>{{end}}
+    {{if .Leave.CancelReason}}<h3>取消原因</h3><p class="pre warn-text">{{.Leave.CancelReason}}</p>{{end}}
+  </div>
+</div>
+{{if .HasArchived}}
+<div class="card">
+  <h2>班级快照</h2>
+  <dl class="detail-list">
+    <div><dt>班级</dt><dd>{{.Archived.ClassName}}{{if .Archived.Department}} · {{.Archived.Department}}{{end}}</dd></div>
+    <div><dt>最后班主任</dt><dd>{{if .Archived.LastTeacherName}}{{.Archived.LastTeacherName}}{{else}}—{{end}}</dd></div>
+    <div><dt>最后辅导员</dt><dd>{{if .Archived.LastCounselorName}}{{.Archived.LastCounselorName}}{{else}}—{{end}}</dd></div>
+    <div><dt>清理时间</dt><dd>{{fmtDateTime .Archived.CleanedAt}}</dd></div>
+    <div><dt>保留至</dt><dd>{{fmtDate .Archived.RetainUntil}}</dd></div>
+    <div><dt>学生数</dt><dd>{{.Archived.StudentCount}}</dd></div>
+    <div><dt>假条数</dt><dd>{{.Archived.LeaveCount}}</dd></div>
+    {{if .Archived.Reason}}<div><dt>清理原因</dt><dd>{{.Archived.Reason}}</dd></div>{{end}}
+  </dl>
+</div>
+{{end}}
+{{if .Edits}}
+<div class="card table-card">
+  <div class="card-head"><h2>时间修改记录</h2><span class="badge">{{len .Edits}}</span></div>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>修改人</th><th>原时间</th><th>新时间</th><th>修改时间</th></tr></thead>
+    <tbody>
+    {{range .Edits}}
+    <tr>
+      <td data-label="修改人">{{.EditorName}}</td>
+      <td data-label="原时间">{{fmtDateTime .OldStart}} 至 {{fmtDateTime .OldEnd}}</td>
+      <td data-label="新时间">{{fmtDateTime .NewStart}} 至 {{fmtDateTime .NewEnd}}</td>
+      <td data-label="修改时间">{{fmtDateTime .CreatedAt}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+</div>
+{{end}}
+{{if eq .User.Role "admin"}}
+<div class="card">
+  <h2>管理员操作</h2>
+  <p class="muted">提前删除会立即移除该保留假条，且不可恢复；到期后系统也会自动删除。</p>
+  <form method="post" action="/archived/leaves/{{.Leave.ID}}/delete" class="stack" data-confirm="物理删除不可恢复，确定删除这条保留假条吗？">
+    {{template "csrf" .}}
+    <label class="check"><input type="checkbox" name="confirm" value="1" required> 我已确认物理删除且不可恢复</label>
+    <div class="actions"><button class="btn btn-danger" type="submit">物理删除假条</button></div>
+  </form>
+</div>
+{{end}}
+{{end}}

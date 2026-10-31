@@ -1,0 +1,16 @@
+{{define "content"}}
+<section class="narrow">
+  <div class="card">
+    <p class="eyebrow">班级</p><h1>创建班级</h1>
+    <p class="muted">班级名全局唯一。班主任创建班级后即成为本班班主任；辅导员创建后仍需认领或等待班主任邀请。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="/t/classes/new" class="stack">
+      {{template "csrf" .}}
+      <label class="field"><span>班级名称</span><input name="name" value="{{.Name}}" required maxlength="40"><small>例如：2026 级计算机 1 班。</small></label>
+      <label class="field"><span>专业系</span><input name="department" value="{{.Department}}" maxlength="40"></label>
+      {{if .NeedSwitch}}<label class="check"><input type="checkbox" name="confirm_switch" value="1" required> 我确认换班：原班级将立即进入待认领并开始 7 天清理倒计时。</label>{{end}}
+      <div class="actions"><button class="btn btn-primary" type="submit">创建</button><a class="btn" href="/t/classes">取消</a></div>
+    </form>
+  </div>
+</section>
+{{end}}

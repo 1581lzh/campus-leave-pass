@@ -1,0 +1,20 @@
+{{define "content"}}
+<section class="auth-wrap">
+  <div class="card auth-card">
+    <h1>设置新密码</h1>
+    {{if .Admin}}<p class="muted">管理员密码为 1–19 位字母、数字或英文符号。</p>{{else}}<p class="muted">密码为 5–19 位字母、数字或英文符号，不能有空格。</p>{{end}}
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    {{if .Token}}
+    <form method="post" action="/reset-password" class="stack">
+      {{template "csrf" .}}
+      <input type="hidden" name="token" value="{{.Token}}">
+      <label class="field"><span>新密码</span><input type="password" name="password" autocomplete="new-password" required autofocus></label>
+      <label class="field"><span>确认新密码</span><input type="password" name="password2" autocomplete="new-password" required></label>
+      <button class="btn btn-primary btn-block" type="submit">保存并返回登录</button>
+    </form>
+    {{else}}
+    <a class="btn btn-primary btn-block" href="/forgot-password">重新发起忘记密码</a>
+    {{end}}
+  </div>
+</section>
+{{end}}

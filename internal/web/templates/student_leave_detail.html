@@ -1,0 +1,43 @@
+{{define "content"}}
+{{$root := .}}
+<section class="page-head">
+  <div><p class="eyebrow">请假详情</p><h1>{{.Leave.StudentName}} · {{.Leave.ClassName}}</h1><p class="muted">提交于 {{fmtDateTime .Leave.CreatedAt}} · 假条编号 {{.Leave.ID}}</p></div>
+  <div class="head-actions">
+    {{if and (eq .Leave.Status "approved") .CanQR}}<a class="btn btn-primary" href="/s/leaves/{{.Leave.ID}}/qr.png" target="_blank" rel="noopener">查看二维码</a>{{end}}
+    {{if eq .Leave.Status "pending"}}<form method="post" action="/s/leaves/{{.Leave.ID}}/cancel" class="inline" data-confirm="取消后不能恢复，确定取消这条请假吗？">{{template "csrf" $root}}<button class="btn btn-danger" type="submit">取消请假</button></form>{{end}}
+    <a class="btn" href="/s/leaves">返回列表</a>
+  </div>
+</section>
+<div class="grid-2">
+  <div class="card">
+    <h2>假条信息</h2>
+    <dl class="detail-list">
+      <div><dt>状态</dt><dd>{{template "leave_status" .Leave}} {{if .Leave.Decision}}· {{decisionText .Leave}}{{end}}</dd></div>
+      <div><dt>请假时间</dt><dd>{{fmtDateTime .Leave.StartAt}} 至 {{fmtDateTime .Leave.EndAt}}</dd></div>
+      <div><dt>宿舍</dt><dd>{{.Leave.Dorm}}</dd></div>
+      <div><dt>联系电话</dt><dd>{{if .Leave.ContactPhone}}{{.Leave.ContactPhone}}{{else}}—{{end}}</dd></div>
+      <div><dt>班主任</dt><dd>{{.Leave.TeacherName}}</dd></div>
+      <div><dt>辅导员</dt><dd>{{.Leave.CounselorName}}</dd></div>
+      <div><dt>审批截止</dt><dd>{{fmtDateTime .Leave.DeadlineAt}}</dd></div>
+      {{if and .Leave.CreatedBy (ne .Leave.CreatedBy .Leave.StudentUserID)}}<div><dt>提交方式</dt><dd>老师代提交</dd></div>{{end}}
+      {{if .Leave.ApproverName}}<div><dt>审批人</dt><dd>{{.Leave.ApproverName}}</dd></div>{{end}}
+      {{if .Leave.RejectReason}}<div><dt>驳回原因</dt><dd>{{.Leave.RejectReason}}</dd></div>{{end}}
+      {{if .Leave.CancelReason}}<div><dt>取消原因</dt><dd>{{.Leave.CancelReason}}</dd></div>{{end}}
+    </dl>
+  </div>
+  <div class="card">
+    <h2>请假原因</h2>
+    <p class="pre">{{.Leave.Reason}}</p>
+    {{if .Leave.MajorOpinion}}<h3>班主任意见</h3><p class="pre">{{.Leave.MajorOpinion}}</p>{{end}}
+    {{if .Leave.DeptOpinion}}<h3>辅导员意见</h3><p class="pre">{{.Leave.DeptOpinion}}</p>{{end}}
+  </div>
+</div>
+{{if .Edits}}
+<div class="card">
+  <h2>时间修改记录</h2>
+  <table><thead><tr><th>修改人</th><th>原时间</th><th>新时间</th><th>修改时间</th></tr></thead><tbody>
+  {{range .Edits}}<tr><td>{{.EditorName}}</td><td>{{fmtDateTime .OldStart}} 至 {{fmtDateTime .OldEnd}}</td><td>{{fmtDateTime .NewStart}} 至 {{fmtDateTime .NewEnd}}</td><td>{{fmtDateTime .CreatedAt}}</td></tr>{{end}}
+  </tbody></table>
+</div>
+{{end}}
+{{end}}

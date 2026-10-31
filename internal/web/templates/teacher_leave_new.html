@@ -1,0 +1,45 @@
+{{define "content"}}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">代学生请假</p>
+    <h1>{{.Student.Name}} · {{.Student.StudentNo}}</h1>
+    <p class="muted">{{.Class.Name}} · {{.Class.Department}} · 宿舍 {{if .Student.Dorm}}{{.Student.Dorm}}{{else}}未填写{{end}}</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn" href="/t/classes/{{.Class.ID}}/students">返回学生名单</a>
+    <a class="btn" href="/t/leaves?status=pending">待审批请假</a>
+  </div>
+</section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+<div class="alert alert-info">
+  你正在代本班学生提交请假。提交后会通知学生和本班审批人；由于你仍是本班班主任/辅导员，可以自己审批这条请假，也可以等待另一位审批人处理。
+</div>
+<div class="card narrow-card">
+  <h2>请假信息</h2>
+  <form method="post" action="/t/classes/{{.Class.ID}}/students/{{.Student.UserID}}/leave/new" class="stack">
+    {{template "csrf" .}}
+    <label class="field">
+      <span>联系电话（可选）</span>
+      <input name="contact_phone" value="{{.ContactPhone}}" inputmode="tel" maxlength="20" placeholder="用于紧急联系">
+    </label>
+    <label class="field">
+      <span>请假原因</span>
+      <textarea name="reason" rows="5" required minlength="5" maxlength="500" placeholder="请填写完整原因，5–500 个字符">{{.Reason}}</textarea>
+    </label>
+    <label class="field">
+      <span>开始时间</span>
+      <input type="datetime-local" name="start_at" value="{{.Start}}" required>
+      <small>按北京时间填写；开始时间不能早于当前时间 5 分钟以上。</small>
+    </label>
+    <label class="field">
+      <span>结束时间</span>
+      <input type="datetime-local" name="end_at" value="{{.End}}" required>
+      <small>单次请假最长 30 天。</small>
+    </label>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" data-confirm="确认代该学生提交请假吗？提交后可由你或另一位审批人审批。">代提交请假</button>
+      <a class="btn" href="/t/classes/{{.Class.ID}}/students">取消</a>
+    </div>
+  </form>
+</div>
+{{end}}

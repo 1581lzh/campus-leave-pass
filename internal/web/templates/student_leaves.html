@@ -1,0 +1,25 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">学生</p><h1>我的请假</h1><p class="muted">{{.Student.Name}} · {{.Student.StudentNo}}{{if .Student.ClassName}} · {{.Student.ClassName}}{{end}}</p></div>
+  <div class="head-actions">{{if eq .User.Status "active"}}<a class="btn btn-primary" href="/s/leave/new">新建请假</a>{{end}}</div>
+</section>
+{{if .Leaves}}
+<div class="card table-card">
+  <table>
+    <thead><tr><th>请假时间</th><th>班级 / 宿舍</th><th>提交时间</th><th>状态</th><th></th></tr></thead>
+    <tbody>
+      {{range .Leaves}}
+      <tr>
+        <td data-label="请假时间">{{fmtDateTime .StartAt}}<br><span class="muted">至 {{fmtDateTime .EndAt}}</span></td>
+        <td data-label="班级 / 宿舍">{{.ClassName}}<br><span class="muted">{{.Dorm}}</span></td>
+        <td data-label="提交时间">{{fmtDateTime .CreatedAt}}</td>
+        <td data-label="状态">{{template "leave_status" .}}{{if .Decision}}<br><span class="muted">{{decisionText .}}</span>{{end}}</td>
+        <td class="row-actions"><a class="btn btn-sm" href="/s/leaves/{{.ID}}">详情</a></td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{else}}{{template "empty"}}{{end}}
+<p class="muted">已批准请假可在详情页查看二维码；二维码只在请假时段内显示“有效”。</p>
+{{end}}

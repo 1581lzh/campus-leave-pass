@@ -1,0 +1,21 @@
+{{define "content"}}
+<section class="auth-wrap">
+  <div class="card auth-card auth-wide">
+    <h1>辅助重置密码</h1>
+    <p class="muted">提交后会生成 6 位申请码，请把申请码线下告诉可审批的老师。审批通过后回到本页刷新即可获得 10 分钟一次性重置链接。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="/recover" class="stack" data-kind-form>
+      {{template "csrf" .}}
+      <div class="segmented" role="radiogroup" aria-label="账号类型">
+        <label><input type="radio" name="kind" value="student" {{if ne .Kind "staff"}}checked{{end}}> 学生</label>
+        <label><input type="radio" name="kind" value="staff" {{if eq .Kind "staff"}}checked{{end}}> 教职工/管理员</label>
+      </div>
+      <label class="field"><span>学号或用户名</span><input name="ident" value="{{.Ident}}" required></label>
+      <label class="field" data-kind="student"><span>姓名</span><input name="name" value="{{.Name}}"><small>学生必填，需与导入时姓名一致。</small></label>
+      <label class="field" data-kind="staff"><span>绑定手机号</span><input name="phone" value="{{.Phone}}" inputmode="tel"><small>教职工和无人可审批的管理员必填。</small></label>
+      <button class="btn btn-primary btn-block" type="submit">提交申请</button>
+    </form>
+    <div class="auth-links"><a href="/recover/status">查询申请状态</a><a href="/login">返回登录</a></div>
+  </div>
+</section>
+{{end}}

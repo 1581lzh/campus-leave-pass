@@ -1,0 +1,44 @@
+{{define "content"}}
+<section class="narrow">
+  {{if .Done}}
+  <div class="card center">
+    <div class="big-mark">{{if eq .Decision "approved"}}✓{{else}}×{{end}}</div>
+    <h1>{{if eq .Decision "approved"}}已通过{{else}}已驳回{{end}}</h1>
+    <p>代理审批已提交，链接已立即失效。审批人：{{.Approver}}</p>
+    <p class="muted">学生和班级审批人已收到通知；本页关闭后不可再次操作。</p>
+  </div>
+  {{else}}
+  <div class="card">
+    <h1>代理审批</h1>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    {{if .Found}}
+    <p class="muted">你正在使用班主任/辅导员生成的一次性代理链接，链接在审批截止前有效，提交后立即失效。</p>
+    <dl class="detail-list">
+      <div><dt>学生</dt><dd>{{.View.Leave.StudentName}}（{{.View.Leave.StudentNo}}）</dd></div>
+      <div><dt>班级</dt><dd>{{.View.Leave.ClassName}}</dd></div>
+      <div><dt>宿舍</dt><dd>{{.View.Leave.Dorm}}</dd></div>
+      <div><dt>请假时间</dt><dd>{{fmtDateTime .View.Leave.StartAt}} 至 {{fmtDateTime .View.Leave.EndAt}}</dd></div>
+      <div><dt>请假原因</dt><dd class="pre">{{.View.Leave.Reason}}</dd></div>
+      {{if .View.ShowPhone}}<div><dt>联系电话</dt><dd>{{.View.Leave.ContactPhone}}</dd></div>{{end}}
+      <div><dt>审批截止</dt><dd>{{fmtDateTime .View.Leave.DeadlineAt}}</dd></div>
+    </dl>
+    <form method="post" class="stack">
+      {{template "csrf" .}}
+      <fieldset class="field">
+        <legend>审批结果</legend>
+        <div class="segmented">
+          <label><input type="radio" name="decision" value="approved" required> 通过</label>
+          <label><input type="radio" name="decision" value="rejected"> 驳回</label>
+        </div>
+      </fieldset>
+      <label class="field"><span>审批人姓名</span><input name="approver_name" required autocomplete="name"></label>
+      <label class="field"><span>班主任意见（可选）</span><textarea name="major_opinion" rows="2"></textarea></label>
+      <label class="field"><span>辅导员意见（可选）</span><textarea name="dept_opinion" rows="2"></textarea></label>
+      <label class="field"><span>驳回原因（驳回时必填）</span><textarea name="reject_reason" rows="2"></textarea></label>
+      <button class="btn btn-primary" type="submit">提交代理审批</button>
+    </form>
+    {{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}

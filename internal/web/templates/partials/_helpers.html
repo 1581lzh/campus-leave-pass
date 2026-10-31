@@ -1,0 +1,3 @@
+{{define "leave_status"}}<span class="badge badge-{{.Status}}">{{statusName .Status}}</span>{{end}}
+{{define "leave_decision"}}{{if .Decision}}<span class="muted">{{decisionText .}}</span>{{else}}<span class="muted">—</span>{{end}}{{end}}
+{{define "empty"}}<div class="empty">暂无记录。</div>{{end}}

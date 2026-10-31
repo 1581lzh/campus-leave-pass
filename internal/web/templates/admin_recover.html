@@ -1,0 +1,53 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>辅助重置处理</h1><p class="muted">处理另一位管理员或“无班主任/辅导员班级学生”的辅助重置申请。申请码为 6 位，由申请人提供。</p></div><div class="head-actions"><a class="btn" href="/admin">返回概览</a></div></section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+<div class="card">
+  <h2>核验申请码</h2>
+  <form method="post" action="/admin/recover/verify" class="rowform">
+    {{template "csrf" .}}
+    <label class="field grow"><span>学号或用户名</span><input name="ident" value="{{.Ident}}" required></label>
+    <label class="field"><span>6 位申请码</span><input name="code" value="{{.Code}}" inputmode="numeric" maxlength="6" required></label>
+    <button class="btn btn-primary" type="submit">核验</button>
+  </form>
+  {{if .HasFound}}
+  <div class="found-box">
+    <h3>{{.Found.UserName}}{{if .Found.StudentNo}}（{{.Found.StudentNo}}）{{end}}</h3>
+    <dl class="detail-list">
+      <div><dt>用户名</dt><dd>{{.Found.UserName}}</dd></div>
+      <div><dt>学号</dt><dd>{{if .Found.StudentNo}}{{.Found.StudentNo}}{{else}}—{{end}}</dd></div>
+      <div><dt>角色</dt><dd>{{roleName .Found.Role}}</dd></div>
+      <div><dt>班级</dt><dd>{{if .Found.ClassName}}{{.Found.ClassName}}{{else}}—{{end}}</dd></div>
+      <div><dt>申请时间</dt><dd>{{fmtDateTime .Found.RequestedAt}}</dd></div>
+      <div><dt>过期时间</dt><dd>{{fmtDateTime .Found.ExpiresAt}}</dd></div>
+    </dl>
+    <div class="actions">
+      <form method="post" action="/admin/recover/{{.Found.ID}}/approve" class="inline" data-confirm="批准后申请人将获得一次性重置链接，确定批准吗？">{{template "csrf" .}}<input type="hidden" name="code" value="{{.Code}}"><button class="btn btn-primary" type="submit">批准申请</button></form>
+      <form method="post" action="/admin/recover/{{.Found.ID}}/reject" class="inline" data-confirm="拒绝后申请人需重新提交申请，确定拒绝吗？">{{template "csrf" .}}<button class="btn btn-danger" type="submit">拒绝申请</button></form>
+    </div>
+  </div>
+  {{end}}
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>待处理申请</h2><span class="badge">{{len .Requests}}</span></div>
+  <p class="muted">审批按钮对所有待处理申请都可见；服务端会按审批矩阵校验，若你无权处理会给出中文原因和下一步。</p>
+  {{if .Requests}}
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>申请人</th><th>角色 / 班级</th><th>申请时间</th><th>过期时间</th><th>操作</th></tr></thead>
+    <tbody>
+    {{range .Requests}}
+    <tr>
+      <td data-label="申请人">{{.UserName}}{{if .StudentNo}}<br><span class="muted">{{.StudentNo}}</span>{{end}}</td>
+      <td data-label="角色 / 班级">{{roleName .Role}}{{if .ClassName}}<br><span class="muted">{{.ClassName}}</span>{{end}}</td>
+      <td data-label="申请时间">{{fmtDateTime .RequestedAt}}</td>
+      <td data-label="过期时间">{{fmtDateTime .ExpiresAt}}</td>
+      <td data-label="操作"><span class="muted">请向申请人索取 6 位申请码，在上方核验后处理。</span></td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

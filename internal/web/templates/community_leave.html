@@ -1,0 +1,20 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">已批准请假</p><h1>{{.Leave.StudentName}} · {{.Leave.ClassName}}</h1><p class="muted">{{.Leave.StudentNo}} · {{.Leave.Dorm}} · 提交于 {{fmtDateTime .Leave.CreatedAt}}</p></div><div class="head-actions"><a class="btn" href="/c/leaves">返回列表</a></div></section>
+<div class="grid-2">
+  <div class="card"><h2>请假信息</h2><dl class="detail-list">
+    <div><dt>状态</dt><dd>{{template "leave_status" .Leave}}</dd></div>
+    <div><dt>请假时间</dt><dd>{{fmtDateTime .Leave.StartAt}} 至 {{fmtDateTime .Leave.EndAt}}</dd></div>
+    <div><dt>宿舍</dt><dd>{{.Leave.Dorm}}</dd></div>
+    <div><dt>班主任</dt><dd>{{.Leave.TeacherName}}</dd></div>
+    <div><dt>辅导员</dt><dd>{{.Leave.CounselorName}}</dd></div>
+    <div><dt>审批人</dt><dd>{{if .Leave.ApproverName}}{{.Leave.ApproverName}}{{else}}—{{end}}</dd></div>
+  </dl></div>
+  <div class="card"><h2>请假原因与审批意见</h2>
+    <h3>请假原因</h3><p class="pre">{{.Leave.Reason}}</p>
+    {{if .Leave.MajorOpinion}}<h3>班主任意见</h3><p class="pre">{{.Leave.MajorOpinion}}</p>{{end}}
+    {{if .Leave.DeptOpinion}}<h3>辅导员意见</h3><p class="pre">{{.Leave.DeptOpinion}}</p>{{end}}
+    <p class="muted">社区老师仅可查看负责楼栋的已批准请假，用于社区管理；不显示联系电话，也不能审批、取消或修改时间。</p>
+  </div>
+</div>
+{{if .Edits}}<div class="card"><h2>时间修改记录</h2><table><thead><tr><th>修改人</th><th>新时间</th><th>时间</th></tr></thead><tbody>{{range .Edits}}<tr><td>{{.EditorName}}</td><td>{{fmtDateTime .NewStart}} 至 {{fmtDateTime .NewEnd}}</td><td>{{fmtDateTime .CreatedAt}}</td></tr>{{end}}</tbody></table></div>{{end}}
+{{end}}

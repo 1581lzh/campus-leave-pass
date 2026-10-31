@@ -1,0 +1,34 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>请假查询</h1><p class="muted">按提交日期和请假开始日期双范围筛选；共 {{.Total}} 条。CSV 导出遵循当前筛选。</p></div><div class="head-actions"><a class="btn" href="/admin/leaves/export?{{.Query}}">导出 CSV</a><a class="btn" href="/admin/reports">汇总报表</a></div></section>
+<div class="card">
+  <form method="get" action="/admin/leaves" class="filters">
+    <label class="field"><span>提交日期 起</span><input type="date" name="created_from" value="{{.Filter.CreatedFrom}}"></label>
+    <label class="field"><span>提交日期 止</span><input type="date" name="created_to" value="{{.Filter.CreatedTo}}"></label>
+    <label class="field"><span>开始日期 起</span><input type="date" name="start_from" value="{{.Filter.StartFrom}}"></label>
+    <label class="field"><span>开始日期 止</span><input type="date" name="start_to" value="{{.Filter.StartTo}}"></label>
+    <label class="field"><span>楼栋</span><select name="building"><option value="">全部</option>{{range .Buildings}}<option value="{{.}}" {{if eq $.Filter.Building .}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+    <label class="field"><span>班级</span><input name="class" value="{{.Filter.ClassName}}"></label>
+    <label class="field"><span>班主任</span><input name="teacher" value="{{.Filter.TeacherName}}"></label>
+    <label class="field"><span>辅导员</span><input name="counselor" value="{{.Filter.CounselorName}}"></label>
+    <label class="field"><span>状态</span><select name="status"><option value="">全部</option><option value="pending" {{if eq .Filter.Status "pending"}}selected{{end}}>待审批</option><option value="approved" {{if eq .Filter.Status "approved"}}selected{{end}}>已批准</option><option value="rejected" {{if eq .Filter.Status "rejected"}}selected{{end}}>已驳回</option><option value="cancelled" {{if eq .Filter.Status "cancelled"}}selected{{end}}>已取消</option></select></label>
+    <label class="field"><span>关键词</span><input name="q" value="{{.Filter.Keyword}}" placeholder="姓名/学号/电话"></label>
+    <div class="filter-actions"><button class="btn btn-primary" type="submit">筛选</button><a class="btn" href="/admin/leaves">清除</a></div>
+  </form>
+</div>
+<div class="card table-card">
+{{if .Leaves}}
+<table><thead><tr><th>学生</th><th>班级 / 宿舍</th><th>班主任 / 辅导员</th><th>请假时间</th><th>状态</th><th>提交时间</th><th></th></tr></thead><tbody>
+{{range .Leaves}}<tr>
+  <td data-label="学生">{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td>
+  <td data-label="班级 / 宿舍">{{.ClassName}}<br><span class="muted">{{.Dorm}}</span></td>
+  <td data-label="审批人">{{.TeacherName}}<br><span class="muted">{{.CounselorName}}</span></td>
+  <td data-label="请假时间">{{fmtDateTime .StartAt}}<br><span class="muted">至 {{fmtDateTime .EndAt}}</span></td>
+  <td data-label="状态">{{template "leave_status" .}}</td>
+  <td data-label="提交时间">{{fmtDateTime .CreatedAt}}</td>
+  <td class="row-actions"><a class="btn btn-sm" href="/admin/leaves/{{.ID}}">详情</a></td>
+</tr>{{end}}
+</tbody></table>
+<div class="pager"><span>第 {{.PageNo}} / {{.Pages}} 页 · 共 {{.Total}} 条</span><div>{{if gt .PageNo 1}}<a class="btn btn-sm" href="?{{queryPage .Query (add .PageNo -1)}}">上一页</a>{{end}}{{if lt .PageNo .Pages}}<a class="btn btn-sm" href="?{{queryPage .Query (add .PageNo 1)}}">下一页</a>{{end}}</div></div>
+{{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

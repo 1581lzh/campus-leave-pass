@@ -1,0 +1,124 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">{{roleName .User.Role}}</p><h1>{{.User.Username}}</h1><p class="muted">{{if eq .User.Status "active"}}正常{{else}}已停用{{end}}{{if .User.StudentNo}} · 学号 {{.User.StudentNo}}{{end}} · 用户编号 {{.User.ID}}</p></div>
+  <div class="head-actions"><a class="btn" href="/admin/users">返回用户列表</a></div>
+</section>
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .HasReset}}<div class="alert alert-info">该用户有待处理的密码重置申请：状态 {{.PendingReset.Status}}，申请时间 {{fmtDateTime .PendingReset.RequestedAt}}，过期时间 {{fmtDateTime .PendingReset.ExpiresAt}}。请前往 <a href="/admin/recover">辅助重置</a> 核对后处理。</div>{{end}}
+<div class="grid-2">
+  <div class="card">
+    <h2>账号信息</h2>
+    <dl class="detail-list">
+      <div><dt>用户名</dt><dd>{{.User.Username}}</dd></div>
+      <div><dt>角色</dt><dd>{{roleName .User.Role}}</dd></div>
+      <div><dt>手机号</dt><dd>{{if eq .User.Role "student"}}—{{else}}{{if .User.Phone}}{{.User.Phone}}{{else}}—{{end}}{{end}}</dd></div>
+      <div><dt>学号</dt><dd>{{if .User.StudentNo}}{{.User.StudentNo}}{{else}}—{{end}}</dd></div>
+      <div><dt>状态</dt><dd>{{if eq .User.Status "active"}}<span class="badge badge-approved">正常</span>{{else}}<span class="badge badge-cancelled">已停用</span>{{end}}</dd></div>
+      {{if .User.PurgeAfter}}<div><dt>清理时间</dt><dd>{{fmtDateTime .User.PurgeAfter}}（7 天只读保留期结束后自动清理）</dd></div>{{end}}
+      <div><dt>创建时间</dt><dd>{{fmtDateTime .User.CreatedAt}}</dd></div>
+      <div><dt>最近登录</dt><dd>{{fmtDateTime .User.LastLoginAt}}</dd></div>
+      {{if .User.PasswordIsInitial}}<div><dt>密码</dt><dd><span class="warn-text">仍在使用初始密码</span></dd></div>{{end}}
+    </dl>
+    {{if .ResetLink}}
+    <h3>一次性重置链接</h3>
+    <p class="muted">链接 10 分钟内有效，只能使用一次；关闭本页后无法再次查看，请立即通过安全渠道发送给用户。</p>
+    <div class="copybox"><input readonly value="{{.ResetLink}}" data-copy-input><button class="btn btn-sm" type="button" data-copy>复制</button></div>
+    {{end}}
+  </div>
+  <div class="card">
+    <h2>生成重置链接</h2>
+    <p class="muted">适用于用户无法自助重置时。链接 10 分钟内有效、只能使用一次；生成后只显示一次。</p>
+    <form method="post" action="/admin/users/{{.User.ID}}/reset-link" class="inline" data-confirm="生成后链接只显示一次，关闭页面无法再次查看；链接 10 分钟内有效。确定生成吗？">
+      {{template "csrf" .}}
+      <button class="btn" type="submit">生成 10 分钟一次性重置链接</button>
+    </form>
+    {{if ne .User.Role "student"}}
+    <hr>
+    <h3>更换手机号</h3>
+    <p class="muted">手机号在教职工与管理员范围内唯一。更换后旧号立即释放，新号可用于登录和找回密码；请先核验身份。</p>
+    <form method="post" action="/admin/users/{{.User.ID}}/phone" class="stack" data-confirm="更换后旧手机号立即释放，新手机号必须唯一。确定更换吗？">
+      {{template "csrf" .}}
+      <label class="field"><span>新手机号</span><input name="phone" inputmode="numeric" maxlength="11" value="{{.User.Phone}}" required></label>
+      <button class="btn" type="submit">更换手机号</button>
+    </form>
+    {{end}}
+  </div>
+</div>
+{{if .HasStudent}}
+<div class="card">
+  <h2>学生信息</h2>
+  <dl class="detail-list">
+    <div><dt>当前班级</dt><dd>{{if .Student.ClassName}}{{.Student.ClassName}}{{else}}暂无班级{{end}}</dd></div>
+    <div><dt>专业系</dt><dd>{{if .Student.Department}}{{.Student.Department}}{{else}}—{{end}}</dd></div>
+    <div><dt>当前宿舍</dt><dd>{{if .Student.Dorm}}{{.Student.Dorm}}{{else}}<span class="muted">未填写</span>{{end}}</dd></div>
+    <div><dt>导入时间</dt><dd>{{fmtDateTime .Student.ImportedAt}}</dd></div>
+  </dl>
+  <h3>修正学号</h3>
+  <p class="muted">修正后旧学号立即释放，该学生全部会话失效，需要使用新学号重新登录。</p>
+  <form method="post" action="/admin/users/{{.User.ID}}/fix-no" class="rowform" data-confirm="修正学号会立即释放旧学号，并让该学生的全部会话失效。确定保存吗？">
+    {{template "csrf" .}}
+    <label class="field grow"><span>新学号</span><input name="student_no" value="{{.Student.StudentNo}}" required></label>
+    <button class="btn" type="submit">保存学号</button>
+  </form>
+  <h3>调整班级</h3>
+  <p class="muted">调整后原班级历史假条仍保留提交时快照；当前宿舍不变。</p>
+  {{if .Classes}}
+  <form method="post" action="/admin/users/{{.User.ID}}/class" class="rowform" data-confirm="调整班级会立即改变学生的当前班级归属，确定保存吗？">
+    {{template "csrf" .}}
+    <label class="field grow"><span>目标班级</span>
+      <select name="class_id" required>
+        <option value="">请选择目标班级</option>
+        {{range .Classes}}<option value="{{.ID}}" {{if eq $.Student.ClassID .ID}}selected{{end}}>{{.Name}} · {{.Department}}</option>{{end}}
+      </select>
+    </label>
+    <button class="btn" type="submit">保存班级</button>
+  </form>
+  {{else}}
+  <p class="reason-text">暂无可选班级；班级由班主任/辅导员创建，请先让老师创建班级后再调整。</p>
+  {{end}}
+  <h3>修正宿舍</h3>
+  <p class="muted">保存后会写入宿舍修改记录，并通知学生及本班班主任/辅导员。</p>
+  <form method="post" action="/admin/students/{{.Student.UserID}}/dorm" class="rowform" data-confirm="宿舍修改会写入记录并通知学生和班级审批人，确定保存吗？">
+    {{template "csrf" .}}
+    <input type="hidden" name="old_dorm" value="{{dormString .Student.DormBuilding .Student.DormRoom}}">
+    <label class="field grow"><span>新宿舍</span><input name="dorm" value="{{dormString .Student.DormBuilding .Student.DormRoom}}" placeholder="21-601" required></label>
+    <label class="field grow"><span>修改原因（可选）</span><input name="reason" maxlength="200"></label>
+    <button class="btn btn-primary" type="submit">保存宿舍</button>
+  </form>
+  <p><a class="btn btn-sm" href="/admin/students/{{.Student.UserID}}/dorm-edits">查看宿舍修改记录</a></p>
+  {{if .Edits}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>时间</th><th>操作者</th><th>角色</th><th>原宿舍</th><th>新宿舍</th><th>原因</th></tr></thead>
+    <tbody>
+    {{range .Edits}}<tr>
+      <td data-label="时间">{{fmtDateTime .CreatedAt}}</td>
+      <td data-label="操作者">{{.EditorName}}</td>
+      <td data-label="角色">{{roleName .EditorRole}}</td>
+      <td data-label="原宿舍">{{dormString .OldBuilding .OldRoom}}</td>
+      <td data-label="新宿舍">{{dormString .NewBuilding .NewRoom}}</td>
+      <td data-label="原因">{{if .Reason}}{{.Reason}}{{else}}—{{end}}</td>
+    </tr>{{end}}
+    </tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{else if eq .User.Role "student"}}
+<div class="card"><h2>学生信息</h2><p class="muted">该学生暂无班级与宿舍记录；可通过调整班级或联系班主任/辅导员处理。</p></div>
+{{end}}
+<div class="card">
+  <h2>停用账号</h2>
+  {{if eq .User.Status "soft_deleted"}}
+  <p class="warn-text">该账号已停用，处于 7 天只读保留期，将于 {{fmtDateTime .User.PurgeAfter}} 自动清理；无需重复停用。</p>
+  {{else}}
+  <p class="danger-text">停用后账号进入 7 天只读保留期，期间只能查看历史，7 天后自动清理。班主任停用会使班级进入待认领；辅导员停用会退出所有班级。</p>
+  <p class="muted">不能停用自己的账号，也不能停用最后一个可用管理员。</p>
+  <form method="post" action="/admin/users/{{.User.ID}}/delete" class="stack" data-confirm="停用后账号进入 7 天只读保留期，到期自动清理，并立即让账号退出登录。确定停用吗？">
+    {{template "csrf" .}}
+    <label class="field"><span>停用原因（可选）</span><input name="reason" maxlength="200"></label>
+    <label class="check"><input type="checkbox" name="confirm" value="1" required> 我已核对账号并确认停用</label>
+    <button class="btn btn-danger" type="submit">停用账号</button>
+  </form>
+  {{end}}
+</div>
+{{end}}

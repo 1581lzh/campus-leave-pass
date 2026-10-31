@@ -1,0 +1,16 @@
+{{define "content"}}
+<section class="auth-wrap">
+  <div class="card auth-card">
+    <h1>管理员忘记密码</h1>
+    <p class="muted">需要核验管理员用户名和绑定手机号。若无法核验，请联系另一位管理员生成一次性重置链接。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="/admin/forgot-password" class="stack">
+      {{template "csrf" .}}
+      <label class="field"><span>用户名或手机号</span><input name="ident" value="{{.Ident}}" autocomplete="username" required></label>
+      <label class="field"><span>绑定手机号</span><input name="phone" value="{{.Phone}}" inputmode="tel" autocomplete="tel" required></label>
+      <button class="btn btn-primary btn-block" type="submit">核验并继续</button>
+    </form>
+    <div class="auth-links"><a href="/admin/login">返回管理员登录</a></div>
+  </div>
+</section>
+{{end}}

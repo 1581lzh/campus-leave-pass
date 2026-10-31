@@ -1,0 +1,29 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>社区老师楼栋</h1><p class="muted">社区老师可自行选择负责楼栋，管理员也可以在这里调整。楼栋只影响其可见的已批准请假和学生宿舍范围，不改变审批权限；社区老师没有审批权。</p></div><div class="head-actions"><a class="btn" href="/admin/settings/registration-codes">生成社区老师注册码</a><a class="btn" href="/admin">返回概览</a></div></section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+<div class="alert alert-info">社区老师账号不能由管理员直接创建。请先在“注册码”页生成社区老师注册码，交给本人注册后再在这里调整负责楼栋。</div>
+{{if not .Options}}<div class="alert alert-warn">尚未配置校园楼栋（CAMPUS_BUILDINGS）。请先在部署配置中填写楼栋列表，否则社区老师只能手动补充楼栋名。</div>{{end}}
+{{if .Rows}}
+<div class="cards">
+{{range .Rows}}{{$row := .}}
+<article class="card">
+  <div class="card-head"><h2>{{$row.User.Username}}</h2><span class="badge">{{roleName $row.User.Role}}</span></div>
+  <p class="muted">手机 {{maskPhone $row.User.Phone}}</p>
+  <p>当前负责楼栋：{{if $row.Buildings}}{{range $i, $b := $row.Buildings}}{{if $i}}、{{end}}{{$b}}{{end}}{{else}}<span class="warn-text">未设置，暂不可见任何楼栋</span>{{end}}</p>
+  <form method="post" action="/admin/community/{{$row.User.ID}}" class="stack">
+    {{template "csrf" $}}
+    <fieldset class="field"><legend>选择负责楼栋</legend>
+      <div class="checks">{{range $row.Options}}<label class="check"><input type="checkbox" name="buildings" value="{{.}}" {{if contains $row.Buildings .}}checked{{end}}> {{.}}</label>{{end}}</div>
+    </fieldset>
+    <label class="field"><span>补充楼栋（可选）</span><input name="custom" placeholder="多个楼栋用逗号或空格分隔"><small class="muted">可新增不在列表中的楼栋；保存时会与勾选项合并。</small></label>
+    <p class="reason-text">未勾选任何楼栋时，该社区老师将看不到学生宿舍和已批准请假。保存后立即生效。</p>
+    <button class="btn btn-primary" type="submit">保存负责楼栋</button>
+  </form>
+</article>
+{{end}}
+</div>
+{{else}}
+<div class="card">{{template "empty"}}<p class="muted">还没有社区老师账号。请先生成社区老师注册码并由本人注册；账号创建后即可在这里调整负责楼栋。</p><div class="actions"><a class="btn btn-primary" href="/admin/settings/registration-codes">前往注册码</a></div></div>
+{{end}}
+{{end}}

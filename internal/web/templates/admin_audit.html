@@ -1,0 +1,25 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>审计日志</h1><p class="muted">仅记录管理员操作；物理删除假条按 PLAN 不写审计，因此这里不会出现删除记录。</p></div><div class="head-actions"><a class="btn" href="/admin">返回概览</a></div></section>
+<div class="card table-card">
+  <div class="card-head"><h2>最近操作</h2><span class="badge">{{len .Logs}}</span></div>
+  {{if .Logs}}
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>对象</th><th>详情</th><th>IP</th></tr></thead>
+    <tbody>
+    {{range .Logs}}
+    <tr>
+      <td data-label="时间">{{fmtDateTime .CreatedAt}}</td>
+      <td data-label="操作者">{{if .ActorName}}{{.ActorName}}{{else}}—{{end}}</td>
+      <td data-label="动作"><span class="pre">{{.Action}}</span></td>
+      <td data-label="对象">{{if .TargetType}}{{.TargetType}}#{{.TargetID}}{{else}}—{{end}}</td>
+      <td data-label="详情">{{if .Detail}}{{.Detail}}{{else}}—{{end}}</td>
+      <td data-label="IP"><code class="muted">{{.IP}}</code></td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

@@ -1,0 +1,54 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">教职工首页</p><h1>{{if eq .User.Role "counselor"}}辅导员工作台{{else}}班主任工作台{{end}}</h1><p class="muted">{{.User.Username}} · 当前角色：{{roleName .User.Role}}</p></div>
+  <div class="head-actions"><a class="btn" href="/t/classes">我的班级</a>{{if eq .User.Role "teacher"}}<a class="btn btn-primary" href="/t/classes/claim">认领班级</a>{{else}}<a class="btn btn-primary" href="/t/class-invitations">班级邀请</a>{{end}}</div>
+</section>
+
+{{if .Classes}}
+<div class="cards">
+  {{range .Classes}}
+  <article class="card class-card">
+    <div class="card-head"><h2><a href="/t/classes/{{.Class.ID}}">{{.Class.Name}}</a></h2><span class="badge">{{.Pending}} 待审批</span></div>
+    <p class="muted">{{.Class.Department}} · {{.Class.StudentCount}} 名学生</p>
+    <dl class="meta-grid">
+      <div><dt>班主任</dt><dd>{{if .Class.TeacherName}}{{.Class.TeacherName}}{{else}}<span class="danger-text">待认领</span>{{end}}</dd></div>
+      <div><dt>辅导员</dt><dd>{{if .Class.CounselorName}}{{.Class.CounselorName}}{{else}}<span class="danger-text">暂无</span>{{end}}</dd></div>
+    </dl>
+    {{if .Class.Unclaimed}}<div class="alert alert-warn">班级处于待认领状态{{if .Class.DeleteDueAt}}，将在 {{fmtDateTime .Class.DeleteDueAt}} 清理{{end}}。</div>{{end}}
+    <div class="actions">
+      <a class="btn" href="/t/classes/{{.Class.ID}}">班级详情</a>
+      <a class="btn" href="/t/classes/{{.Class.ID}}/students">学生名单</a>
+      {{if .CanImport}}<a class="btn" href="/t/classes/{{.Class.ID}}/students#import">导入学生</a>{{else}}<span class="btn" aria-disabled="true" data-reason="{{.ImportReason}}" tabindex="0">导入学生</span>{{end}}
+    </div>
+  </article>
+  {{end}}
+</div>
+{{else}}
+<div class="card"><p class="lead">你当前没有负责的班级。</p><p class="muted">{{if eq .User.Role "teacher"}}可以创建新班级，或认领一个待认领班级。{{else}}请等待班主任邀请，邀请会显示在“班级邀请”中。{{end}}</p><div class="actions">{{if eq .User.Role "teacher"}}<a class="btn btn-primary" href="/t/classes/new">创建班级</a><a class="btn" href="/t/classes/claim">认领班级</a>{{else}}<a class="btn btn-primary" href="/t/class-invitations">查看班级邀请</a>{{end}}</div></div>
+{{end}}
+
+<div class="card">
+  <div class="card-head"><h2>待审批请假</h2></div>
+  {{if .Pending}}
+  <table><thead><tr><th>学生</th><th>班级</th><th>请假时间</th><th>提交时间</th><th></th></tr></thead><tbody>
+    {{range .Pending}}
+    <tr><td>{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td><td>{{.ClassName}}</td><td>{{fmtDateTime .StartAt}} 至 {{fmtDateTime .EndAt}}</td><td>{{fmtDateTime .CreatedAt}}</td><td><a class="btn btn-sm" href="/t/leaves/{{.ID}}">审批</a></td></tr>
+    {{end}}
+  </tbody></table>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+
+{{if .Invitations}}
+<div class="card">
+  <div class="card-head"><h2>待处理班级邀请</h2><a href="/t/class-invitations">全部邀请</a></div>
+  <ul class="list">
+    {{range .Invitations}}<li><div class="list-main"><span class="list-title">{{.ClassName}}</span><span class="list-sub">{{.InviterName}} 邀请你担任辅导员 · {{fmtDateTime .CreatedAt}}</span></div><a class="btn btn-sm" href="/t/class-invitations">查看</a></li>{{end}}
+  </ul>
+</div>
+{{end}}
+
+<div class="card">
+  <div class="card-head"><h2>最新通知</h2><a href="/t/notifications">通知中心</a></div>
+  {{if .Notices}}<ul class="list">{{range .Notices}}<li><div class="list-main"><span class="list-title">{{.Title}}</span><span class="list-sub">{{fmtDateTime .CreatedAt}} · {{.Body}}</span></div>{{if .Link}}<a class="btn btn-sm" href="{{.Link}}">查看</a>{{end}}</li>{{end}}</ul>{{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

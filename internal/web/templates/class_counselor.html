@@ -1,0 +1,25 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">{{.Class.Name}}</p><h1>辅导员设置</h1><p class="muted">当前辅导员：{{if .Class.CounselorName}}{{.Class.CounselorName}}{{else}}暂无{{end}}</p></div><div class="head-actions"><a class="btn" href="/t/classes/{{.Class.ID}}">班级详情</a></div></section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+<div class="grid-2">
+  <div class="card">
+    <h2>邀请辅导员</h2>
+    <p class="muted">只能邀请已用辅导员注册码注册的账号；对方接受后生效。邀请待处理时不能重复邀请。</p>
+    <form method="get" action="/t/classes/{{.Class.ID}}/counselor" class="searchbar"><label class="field grow"><span>按用户名精确搜索</span><input name="q" value="{{.Search}}"></label><button class="btn" type="submit">搜索</button></form>
+    {{if .HasFound}}
+      <div class="found-box">
+        <h3>{{.Found.Username}}</h3><p class="muted">角色：辅导员 · 手机：{{maskPhone .Found.Phone}}</p>
+        <form method="post" action="/t/classes/{{.Class.ID}}/counselor/invite" class="stack">{{template "csrf" .}}<input type="hidden" name="username" value="{{.Found.Username}}"><label class="field"><span>邀请备注（可选）</span><input name="note"></label><button class="btn btn-primary" type="submit">发送邀请</button></form>
+      </div>
+    {{end}}
+  </div>
+  <div class="card">
+    <h2>当前邀请</h2>
+    {{if .HasInvite}}
+      <dl class="detail-list"><div><dt>邀请人</dt><dd>{{.Invite.InviterName}}</dd></div><div><dt>被邀请人</dt><dd>{{.Invite.ReplacesName}}{{if not .Invite.ReplacesName}}（新辅导员）{{end}}</dd></div><div><dt>发送时间</dt><dd>{{fmtDateTime .Invite.CreatedAt}}</dd></div><div><dt>状态</dt><dd>{{.Invite.Status}}</dd></div></dl>
+      <form method="post" action="/t/classes/{{.Class.ID}}/counselor/cancel" class="inline" data-confirm="取消后对方将无法接受该邀请，确定取消吗？">{{template "csrf" .}}<button class="btn btn-danger" type="submit">取消待处理邀请</button></form>
+    {{else}}<p class="muted">当前没有待处理的邀请。班主任可直接邀请；管理员也可以直接指派辅导员。</p>{{end}}
+  </div>
+</div>
+{{end}}

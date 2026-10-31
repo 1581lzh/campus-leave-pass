@@ -1,0 +1,24 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">辅导员</p><h1>班级邀请</h1><p class="muted">接受邀请后你将成为该班辅导员；若该班已有辅导员，对方会被顶替并收到通知。</p></div><div class="head-actions"><a class="btn" href="/t">返回首页</a></div></section>
+<div class="card">
+{{if .Invitations}}
+<table><thead><tr><th>班级</th><th>邀请人</th><th>备注</th><th>时间</th><th>状态</th><th>操作</th></tr></thead><tbody>
+{{range .Invitations}}
+<tr>
+  <td>{{.ClassName}}<br><span class="muted">{{.Department}}</span></td>
+  <td>{{.InviterName}}</td>
+  <td>{{if .Note}}{{.Note}}{{else}}—{{end}}</td>
+  <td>{{fmtDateTime .CreatedAt}}</td>
+  <td>{{.Status}}{{if .ReplacesName}}<br><span class="warn-text">将顶替 {{.ReplacesName}}</span>{{end}}</td>
+  <td class="row-actions">
+    {{if eq .Status "pending"}}
+    <form method="post" action="/t/class-invitations/{{.ID}}/respond" class="inline">{{template "csrf" $}}<input type="hidden" name="accept" value="1"><button class="btn btn-sm btn-primary" type="submit" data-confirm="{{if .ReplacesName}}接受后将顶替 {{.ReplacesName}}，对方会收到通知。确定接受吗？{{else}}确定接受该班级邀请吗？{{end}}">接受</button></form>
+    <form method="post" action="/t/class-invitations/{{.ID}}/respond" class="inline">{{template "csrf" $}}<input type="hidden" name="accept" value="0"><button class="btn btn-sm" type="submit">拒绝</button></form>
+    {{else}}<span class="muted">已处理</span>{{end}}
+  </td>
+</tr>
+{{end}}
+</tbody></table>
+{{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

@@ -1,0 +1,10 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">{{.Class.Name}}</p><h1>导入记录</h1><p class="muted">只记录批次结果，不显示、不保存学生明文密码。</p></div><div class="head-actions"><a class="btn" href="/t/classes/{{.Class.ID}}/students">学生名单</a></div></section>
+<div class="card">
+{{if .Batches}}
+<table><thead><tr><th>时间</th><th>文件名</th><th>总行数</th><th>成功</th><th>失败</th><th>状态</th><th>IP</th></tr></thead><tbody>
+{{range .Batches}}<tr><td>{{fmtDateTime .CreatedAt}}</td><td>{{.FileName}}</td><td>{{.TotalRows}}</td><td>{{.CreatedCount}}</td><td>{{.ErrorCount}}</td><td>{{.Status}}</td><td>{{.IP}}</td></tr>{{end}}
+</tbody></table>
+{{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

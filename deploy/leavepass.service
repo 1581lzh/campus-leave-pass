@@ -1,0 +1,47 @@
+# /etc/systemd/system/leavepass.service
+#
+# 校园请假通行系统 systemd 单元样例。
+# 这是样例文件，未在当前机器安装或启动过；安装前请阅读 deploy/README.md
+# 并逐项人工确认路径、用户与权限。
+#
+# 安装：
+#   install -m 0644 deploy/leavepass.service /etc/systemd/system/leavepass.service
+#   systemctl daemon-reload
+#   systemctl enable --now leavepass
+# 查看日志：
+#   journalctl -u leavepass -f
+
+[Unit]
+Description=Campus Leave Pass
+Documentation=file:/opt/leavepass/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+UMask=0077
+Type=simple
+User=leavepass
+Group=leavepass
+WorkingDirectory=/opt/leavepass
+
+# .env 必须为 0600 且属主为 leavepass；应用只监听 127.0.0.1:8080。
+EnvironmentFile=/opt/leavepass/.env
+
+ExecStart=/opt/leavepass/leavepass
+
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+KillSignal=SIGTERM
+
+# 加固：不需要 root 能力（8080 为非特权端口）。
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/leavepass
+
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

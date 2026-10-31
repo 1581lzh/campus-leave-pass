@@ -1,0 +1,21 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">社区老师</p><h1>学生宿舍查询</h1><p class="muted">按学号精确搜索在读学生；可修正宿舍。查询每分钟最多 30 次。</p></div></section>
+<div class="card">
+  <form method="get" action="/c/students" class="searchbar"><label class="field grow"><span>学号</span><input name="q" value="{{.Query}}" required></label><button class="btn btn-primary" type="submit">查询</button></form>
+  {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+  {{if .Found}}
+  <div class="found-box">
+    <h2>{{.Student.Name}}（{{.Student.StudentNo}}）</h2>
+    <p class="muted">{{.Student.ClassName}} · {{.Student.Department}} · 当前宿舍：{{if .Student.Dorm}}{{.Student.Dorm}}{{else}}未填写{{end}}</p>
+    <form method="post" action="/c/students/{{.Student.UserID}}/dorm" class="rowform">
+      {{template "csrf" .}}
+      <input type="hidden" name="old_dorm" value="{{.Student.Dorm}}">
+      <label class="field grow"><span>新宿舍</span><input name="dorm" value="{{.Student.Dorm}}" placeholder="楼栋-房间" required></label>
+      <label class="field grow"><span>修改原因</span><input name="reason" placeholder="可选"></label>
+      <button class="btn btn-primary" type="submit" data-confirm="宿舍修改会通知学生和班级审批人，确定保存吗？">保存宿舍</button>
+    </form>
+  </div>
+  {{end}}
+</div>
+<div class="card"><p class="muted">修改记录仅管理员和本班审批人可见；社区老师只显示学生当前必要信息。</p></div>
+{{end}}

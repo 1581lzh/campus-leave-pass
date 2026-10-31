@@ -1,0 +1,26 @@
+{{define "content"}}
+<section class="gate-wrap">
+  {{if .Found}}
+  <div class="gate-card gate-{{.Gate.State}}">
+    <p class="eyebrow">请假通行凭证</p>
+    <div class="gate-state">{{.Gate.StateLabel}}</div>
+    <h1>{{.Gate.Leave.StudentName}}</h1>
+    <p class="gate-sub">{{.Gate.Leave.StudentNo}} · {{.Gate.Leave.ClassName}}</p>
+    <dl class="gate-grid">
+      <div><dt>宿舍</dt><dd>{{.Gate.Leave.Dorm}}</dd></div>
+      <div><dt>开始</dt><dd>{{fmtDateTime .Gate.Leave.StartAt}}</dd></div>
+      <div><dt>结束</dt><dd>{{fmtDateTime .Gate.Leave.EndAt}}</dd></div>
+      <div><dt>审批人</dt><dd>{{if .Gate.Leave.ApproverName}}{{.Gate.Leave.ApproverName}}{{else}}—{{end}}</dd></div>
+    </dl>
+    {{if eq .Gate.State "valid"}}<p class="gate-hint">当前时间在请假时段内，请配合门卫核验。</p>{{else if eq .Gate.State "not_started"}}<p class="gate-hint">请假尚未开始，当前不能通行。</p>{{else}}<p class="gate-hint">请假已结束，当前不能通行。</p>{{end}}
+    <button class="btn" type="button" data-print>打印此页</button>
+  </div>
+  {{else}}
+  <div class="card gate-card">
+    <p class="eyebrow">请假通行凭证</p>
+    <h1>凭证无效</h1>
+    <p class="muted">二维码不存在、已被撤销，或对应请假已取消/归档。请联系学生或班主任确认。</p>
+  </div>
+  {{end}}
+</section>
+{{end}}

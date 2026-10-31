@@ -1,0 +1,46 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">班级详情</p><h1>{{.Class.Name}}</h1><p class="muted">{{.Class.Department}} · {{.Class.StudentCount}} 名学生 · 版本 {{.Class.Version}}</p></div>
+  <div class="head-actions"><a class="btn" href="/t/classes/{{.Class.ID}}/students">学生名单</a><a class="btn" href="/t/classes/{{.Class.ID}}/counselor">辅导员设置</a><a class="btn" href="/t/classes">返回</a></div>
+</section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+{{if .Class.Unclaimed}}<div class="alert alert-warn">本班暂无班主任{{if .Class.DeleteDueAt}}，将在 {{fmtDateTime .Class.DeleteDueAt}} 清理班级和学生账号{{end}}。请尽快认领或由管理员指派。</div>{{end}}
+<div class="grid-2">
+  <div class="card">
+    <h2>班级信息</h2>
+    <dl class="detail-list">
+      <div><dt>班主任</dt><dd>{{if .Class.TeacherName}}{{.Class.TeacherName}}{{else}}<span class="danger-text">待认领</span>{{end}}</dd></div>
+      <div><dt>辅导员</dt><dd>{{if .Class.CounselorName}}{{.Class.CounselorName}}{{else}}<span class="danger-text">暂无</span>{{end}}</dd></div>
+      <div><dt>创建时间</dt><dd>{{fmtDateTime .Class.CreatedAt}}</dd></div>
+      {{if .Class.DeleteDueAt}}<div><dt>清理截止</dt><dd>{{fmtDateTime .Class.DeleteDueAt}}</dd></div>{{end}}
+    </dl>
+    <h3>改名 / 修改专业系</h3>
+    <form method="post" action="/t/classes/{{.Class.ID}}/rename" class="stack">
+      {{template "csrf" .}}
+      <input type="hidden" name="version" value="{{.Class.Version}}">
+      <label class="field"><span>班级名称</span><input name="name" value="{{.Class.Name}}" required></label>
+      <label class="field"><span>专业系</span><input name="department" value="{{.Class.Department}}"></label>
+      <button class="btn" type="submit">保存修改</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>班级操作</h2>
+    {{if .HasInvite}}<div class="alert alert-info">待处理辅导员邀请：{{.Invite.InviterName}} 邀请 {{if .Invite.ReplacesName}}{{.Invite.ReplacesName}}{{else}}新辅导员{{end}}，等待对方接受。</div>{{end}}
+    <p class="muted">导入学生需要本班配齐班主任和辅导员；缺少时导入按钮会说明原因。</p>
+    {{if .CanImport}}<a class="btn btn-primary" href="/t/classes/{{.Class.ID}}/students#import">导入学生</a>{{else}}<span class="btn" aria-disabled="true" data-reason="{{.ImportReason}}" tabindex="0">导入学生</span><p class="reason-text">{{.ImportReason}}</p>{{end}}
+    <hr>
+    <form method="post" action="/t/classes/{{.Class.ID}}/exit" class="inline" data-confirm="{{if eq .User.Role "teacher"}}退出后班级立即进入待认领，7 天内无班主任将清理班级和学生账号。确定退出吗？{{else}}退出后你将不再是本班辅导员。确定退出吗？{{end}}">
+      {{template "csrf" .}}<button class="btn btn-danger" type="submit">退出班级</button>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>待审批请假</h2><span class="badge">{{len .Pending}}</span></div>
+  {{if .Pending}}<table><thead><tr><th>学生</th><th>请假时间</th><th>提交时间</th><th></th></tr></thead><tbody>{{range .Pending}}<tr><td>{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td><td>{{fmtDateTime .StartAt}} 至 {{fmtDateTime .EndAt}}</td><td>{{fmtDateTime .CreatedAt}}</td><td><a class="btn btn-sm" href="/t/leaves/{{.ID}}">审批</a></td></tr>{{end}}</tbody></table>{{else}}{{template "empty"}}{{end}}
+</div>
+<div class="card">
+  <div class="card-head"><h2>最近请假</h2><span class="muted">最多显示最近 50 条</span></div>
+  {{if .Recent}}<table><thead><tr><th>学生</th><th>状态</th><th>请假时间</th><th></th></tr></thead><tbody>{{range .Recent}}<tr><td>{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td><td>{{template "leave_status" .}}</td><td>{{fmtDateTime .StartAt}} 至 {{fmtDateTime .EndAt}}</td><td><a class="btn btn-sm" href="/t/leaves/{{.ID}}">详情</a></td></tr>{{end}}</tbody></table>{{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

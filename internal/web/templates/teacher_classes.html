@@ -1,0 +1,20 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">教职工</p><h1>我的班级</h1><p class="muted">班主任最多负责一个班级；辅导员可接受多个班级邀请。</p></div>
+  <div class="head-actions">
+    {{if eq .User.Role "teacher"}}<a class="btn" href="/t/classes/claim">认领班级</a><a class="btn btn-primary" href="/t/classes/new">创建班级</a>{{else}}<a class="btn btn-primary" href="/t/class-invitations">班级邀请</a>{{end}}
+  </div>
+</section>
+{{if .Classes}}
+<div class="cards">
+{{range .Classes}}
+<article class="card class-card">
+  <div class="card-head"><h2><a href="/t/classes/{{.Class.ID}}">{{.Class.Name}}</a></h2><span class="badge">{{.Pending}} 待审批</span></div>
+  <p class="muted">{{.Class.Department}} · {{.Class.StudentCount}} 名学生</p>
+  <dl class="meta-grid"><div><dt>班主任</dt><dd>{{if .Class.TeacherName}}{{.Class.TeacherName}}{{else}}待认领{{end}}</dd></div><div><dt>辅导员</dt><dd>{{if .Class.CounselorName}}{{.Class.CounselorName}}{{else}}暂无{{end}}</dd></div></dl>
+  <div class="actions"><a class="btn" href="/t/classes/{{.Class.ID}}">详情</a><a class="btn" href="/t/classes/{{.Class.ID}}/students">学生</a><a class="btn" href="/t/classes/{{.Class.ID}}/counselor">辅导员设置</a></div>
+</article>
+{{end}}
+</div>
+{{else}}{{template "empty"}}{{end}}
+{{end}}

@@ -1,0 +1,24 @@
+{{define "content"}}
+<section class="narrow">
+  <div class="card">
+    <h1>重置申请状态</h1>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    {{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+    {{if .Request.ID}}
+    <dl class="detail-list">
+      <div><dt>申请人</dt><dd>{{.Request.UserName}}{{if .Request.StudentNo}}（{{.Request.StudentNo}}）{{end}}</dd></div>
+      <div><dt>角色</dt><dd>{{roleName .Request.Role}}</dd></div>
+      {{if .Request.ClassName}}<div><dt>班级</dt><dd>{{.Request.ClassName}}</dd></div>{{end}}
+      <div><dt>状态</dt><dd>{{.Request.Status}}</dd></div>
+      <div><dt>申请时间</dt><dd>{{fmtDateTime .Request.RequestedAt}}</dd></div>
+      <div><dt>有效期至</dt><dd>{{fmtDateTime .Request.ExpiresAt}}</dd></div>
+    </dl>
+    {{end}}
+    <div class="actions">
+      <a class="btn btn-primary" href="/recover/status">刷新状态</a>
+      <a class="btn" href="/recover">重新发起申请</a>
+    </div>
+    <p class="muted">申请状态只对当前浏览器可见；更换设备或清除 Cookie 后需要重新发起。</p>
+  </div>
+</section>
+{{end}}

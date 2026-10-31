@@ -1,0 +1,37 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">班级</p><h1>认领班级</h1><p class="muted">只列出当前待认领的班级；认领后你立即成为班主任。已有班主任的班级需要顶替确认。</p></div></section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+<div class="card">
+  <form method="get" action="/t/classes/claim" class="searchbar">
+    <label class="field grow"><span>按班级名精确查找</span><input name="q" value="{{.Search}}" placeholder="输入完整班级名"></label>
+    <button class="btn" type="submit">查找</button>
+  </form>
+  {{if .HasFound}}
+  <div class="found-box">
+    <h2>{{.Found.Name}}</h2>
+    <p class="muted">{{.Found.Department}} · {{.Found.StudentCount}} 名学生 · 班主任：{{if .Found.TeacherName}}{{.Found.TeacherName}}{{else}}待认领{{end}}</p>
+    <form method="post" action="/t/classes/claim" class="stack">
+      {{template "csrf" .}}
+      <input type="hidden" name="class_id" value="{{.Found.ID}}">
+      <input type="hidden" name="class_name" value="{{.Found.Name}}">
+      {{if .TakeoverNeeded}}<label class="check"><input type="checkbox" name="confirm_takeover" value="1" required> 我确认顶替现任班主任；对方将收到通知。</label>{{end}}
+      {{if .SwitchNeeded}}<label class="check"><input type="checkbox" name="confirm_switch" value="1" required> 我确认换班：原班级将立即进入待认领并开始 7 天清理倒计时。</label>{{end}}
+      <button class="btn btn-primary" type="submit">认领该班级</button>
+    </form>
+  </div>
+  {{end}}
+</div>
+<div class="card">
+  <h2>当前可认领班级</h2>
+  {{if .Classes}}
+  <div class="cards">
+    {{range .Classes}}
+    <article class="card class-card">
+      <h3>{{.Name}}</h3><p class="muted">{{.Department}} · {{.StudentCount}} 名学生{{if .DeleteDueAt}} · 清理倒计时至 {{fmtDateTime .DeleteDueAt}}{{end}}</p>
+      <form method="post" action="/t/classes/claim" class="inline">{{template "csrf" $}}<input type="hidden" name="class_id" value="{{.ID}}"><input type="hidden" name="class_name" value="{{.Name}}"><button class="btn btn-sm btn-primary" type="submit">认领</button></form>
+    </article>
+    {{end}}
+  </div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

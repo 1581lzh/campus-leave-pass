@@ -1,0 +1,72 @@
+{{define "content"}}
+{{$root := .}}
+<section class="page-head">
+  <div><p class="eyebrow">请假审批</p><h1>{{.Leave.StudentName}} · {{.Leave.ClassName}}</h1><p class="muted">{{.Leave.StudentNo}} · {{.Leave.Dorm}} · 提交于 {{fmtDateTime .Leave.CreatedAt}}</p></div>
+  <div class="head-actions"><a class="btn" href="/t/classes/{{.Leave.ClassID}}">返回班级</a><a class="btn" href="/t">工作台</a></div>
+</section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+<div class="grid-2">
+  <div class="card">
+    <h2>假条信息</h2>
+    <dl class="detail-list">
+      <div><dt>状态</dt><dd>{{template "leave_status" .Leave}} {{if .Leave.Decision}}· {{decisionText .Leave}}{{end}}</dd></div>
+      <div><dt>请假时间</dt><dd>{{fmtDateTime .Leave.StartAt}} 至 {{fmtDateTime .Leave.EndAt}}</dd></div>
+      <div><dt>审批截止</dt><dd>{{fmtDateTime .Leave.DeadlineAt}}</dd></div>
+      {{if and .Leave.CreatedBy (ne .Leave.CreatedBy .Leave.StudentUserID)}}<div><dt>提交方式</dt><dd>老师代提交</dd></div>{{end}}
+      <div><dt>联系电话</dt><dd>{{if .Leave.ContactPhone}}{{.Leave.ContactPhone}}{{else}}—{{end}}</dd></div>
+      <div><dt>班主任快照</dt><dd>{{.Leave.TeacherName}}</dd></div>
+      <div><dt>辅导员快照</dt><dd>{{.Leave.CounselorName}}</dd></div>
+      {{if .Leave.ApproverName}}<div><dt>审批人</dt><dd>{{.Leave.ApproverName}}</dd></div>{{end}}
+      {{if .Leave.RejectReason}}<div><dt>驳回原因</dt><dd>{{.Leave.RejectReason}}</dd></div>{{end}}
+    </dl>
+    <h3>请假原因</h3><p class="pre">{{.Leave.Reason}}</p>
+    {{if .Leave.MajorOpinion}}<h3>班主任意见</h3><p class="pre">{{.Leave.MajorOpinion}}</p>{{end}}
+    {{if .Leave.DeptOpinion}}<h3>辅导员意见</h3><p class="pre">{{.Leave.DeptOpinion}}</p>{{end}}
+  </div>
+  <div class="card">
+    <h2>审批</h2>
+    {{if .CanDecide}}
+    <form method="post" action="/t/leaves/{{.Leave.ID}}/decide" class="stack">
+      {{template "csrf" .}}
+      <fieldset class="field"><legend>审批结果</legend><div class="segmented"><label><input type="radio" name="decision" value="approved" required> 通过</label><label><input type="radio" name="decision" value="rejected"> 驳回</label></div></fieldset>
+      <label class="field"><span>审批人姓名</span><input name="approver_name" value="{{.User.Username}}" required></label>
+      <label class="field"><span>班主任意见（可选）</span><textarea name="major_opinion" rows="2"></textarea></label>
+      <label class="field"><span>辅导员意见（可选）</span><textarea name="dept_opinion" rows="2"></textarea></label>
+      <label class="field"><span>驳回原因（驳回时必填）</span><textarea name="reject_reason" rows="2"></textarea></label>
+      <button class="btn btn-primary" type="submit" data-confirm="审批结果提交后不能修改，确定提交吗？">提交审批</button>
+    </form>
+    {{else if eq .Leave.Status "pending"}}
+      <p class="reason-text">无法审批：你不是该假条所属班级的当前或提交时班主任/辅导员。可返回班级列表查看，或联系管理员处理。</p>
+    {{else}}
+      <p class="muted">该请假已处理，不能重复审批。</p>
+    {{end}}
+    {{if eq .Leave.Status "pending"}}
+    <hr>
+    <h3>代理审批链接</h3>
+    <p class="muted">生成后旧链接立即失效；链接仅显示一次，在审批截止前有效。</p>
+    <form method="post" action="/t/leaves/{{.Leave.ID}}/proxy" class="stack">
+      {{template "csrf" .}}
+      <label class="check"><input type="checkbox" name="show_phone" value="1"> 在代理页面显示学生联系电话</label>
+      <button class="btn" type="submit" data-confirm="生成新链接会使旧链接立即失效，确定生成吗？">生成代理链接</button>
+    </form>
+    {{if .ProxyURL}}<div class="copybox"><input readonly value="{{.ProxyURL}}" data-copy-input><button class="btn btn-sm" type="button" data-copy>复制</button></div>{{end}}
+    {{end}}
+  </div>
+</div>
+{{if .CanDecide}}
+<div class="card">
+  <h2>修改请假时间</h2>
+  <p class="muted">修改会写入时间修改记录并通知学生。</p>
+  <form method="post" action="/t/leaves/{{.Leave.ID}}/time" class="rowform">
+    {{template "csrf" .}}
+    <label class="field grow"><span>开始时间</span><input type="datetime-local" name="start_at" value="{{fmtInput .Leave.StartAt}}" required></label>
+    <label class="field grow"><span>结束时间</span><input type="datetime-local" name="end_at" value="{{fmtInput .Leave.EndAt}}" required></label>
+    <button class="btn" type="submit">保存时间</button>
+  </form>
+</div>
+{{end}}
+{{if .Edits}}
+<div class="card"><h2>时间修改记录</h2><table><thead><tr><th>修改人</th><th>原时间</th><th>新时间</th><th>时间</th></tr></thead><tbody>{{range .Edits}}<tr><td>{{.EditorName}}</td><td>{{fmtDateTime .OldStart}} 至 {{fmtDateTime .OldEnd}}</td><td>{{fmtDateTime .NewStart}} 至 {{fmtDateTime .NewEnd}}</td><td>{{fmtDateTime .CreatedAt}}</td></tr>{{end}}</tbody></table></div>
+{{end}}
+{{end}}

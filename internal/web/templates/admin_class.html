@@ -1,0 +1,109 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">班级详情</p><h1>{{.Class.Name}}</h1><p class="muted">{{.Class.Department}} · {{.Class.StudentCount}} 名学生 · 版本 {{.Class.Version}} · 创建于 {{fmtDateTime .Class.CreatedAt}}</p></div>
+  <div class="head-actions"><a class="btn" href="/admin/classes">返回班级列表</a><a class="btn" href="/admin/leaves?status=pending">请假查询</a></div>
+</section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Class.Unclaimed}}<div class="alert alert-warn">本班暂无班主任；清理截止 {{fmtDateTime .Class.DeleteDueAt}}，剩余 {{daysLeft .Class.DeleteDueAt}} 天。指派班主任后清理倒计时立即取消。</div>{{end}}
+<div class="stats">
+  <div class="stat"><span class="stat-num">{{.Pending}}</span><span class="stat-label">待审批请假</span></div>
+  <div class="stat"><span class="stat-num">{{len .Students}}</span><span class="stat-label">学生名单</span></div>
+  <div class="stat"><span class="stat-num">{{len .Leaves}}</span><span class="stat-label">最近请假</span></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <h2>班级信息</h2>
+    <dl class="detail-list">
+      <div><dt>专业系</dt><dd>{{.Class.Department}}</dd></div>
+      <div><dt>班主任</dt><dd>{{if .Class.TeacherName}}{{.Class.TeacherName}}{{else}}<span class="danger-text">待认领</span>{{end}}</dd></div>
+      <div><dt>辅导员</dt><dd>{{if .Class.CounselorName}}{{.Class.CounselorName}}{{else}}<span class="muted">暂无</span>{{end}}</dd></div>
+      <div><dt>学生数</dt><dd>{{.Class.StudentCount}}</dd></div>
+      <div><dt>版本</dt><dd>{{.Class.Version}}</dd></div>
+      <div><dt>创建时间</dt><dd>{{fmtDateTime .Class.CreatedAt}}</dd></div>
+      {{if .Class.DeleteDueAt}}<div><dt>清理截止</dt><dd>{{fmtDateTime .Class.DeleteDueAt}}（剩余 {{daysLeft .Class.DeleteDueAt}} 天）</dd></div>{{end}}
+    </dl>
+    {{if .HasInvite}}<div class="alert alert-info">待处理辅导员邀请：邀请人 {{.Invite.InviterName}}；被顶替人 {{if .Invite.ReplacesName}}{{.Invite.ReplacesName}}{{else}}无（新辅导员）{{end}}；状态 {{if eq .Invite.Status "pending"}}待接受{{else}}{{.Invite.Status}}{{end}}；发送于 {{fmtDateTime .Invite.CreatedAt}}。</div>{{end}}
+  </div>
+  <div class="card">
+    <h2>指派班主任</h2>
+    <p class="muted">指派后立即取消待认领与 7 天清理倒计时；若该教师已有班级，原班将转为待认领。仅正常状态的教师账号可被指派。</p>
+    {{if .Teachers}}
+    <form method="post" action="/admin/classes/{{.Class.ID}}/teacher" class="stack">
+      {{template "csrf" .}}
+      <label class="field"><span>班主任账号</span>
+        <select name="teacher_id" required>
+          <option value="">请选择班主任</option>
+          {{range .Teachers}}<option value="{{.ID}}" {{if eq $.Class.TeacherUserID .ID}}selected{{end}}>{{.Username}} · {{maskPhone .Phone}}{{if ne .Status "active"}}（已停用，无法指派）{{end}}</option>{{end}}
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" name="confirm_move" value="1"> 若该教师已有班级，我确认将其移出原班级（原班立即进入待认领并开始 7 天清理倒计时）</label>
+      <button class="btn btn-primary" type="submit">保存班主任</button>
+    </form>
+    {{else}}
+    <p class="reason-text">暂无可用班主任账号；请先让教师使用管理员发放的班主任注册码完成注册，再回到本页指派。</p>
+    {{end}}
+    <hr>
+    <h2>指派辅导员</h2>
+    <p class="muted">辅导员可负责多个班级；替换现任会通知原辅导员，并自动取消该班待处理的辅导员邀请。</p>
+    {{if .Counselors}}
+    <form method="post" action="/admin/classes/{{.Class.ID}}/counselor" class="stack">
+      {{template "csrf" .}}
+      <label class="field"><span>辅导员账号</span>
+        <select name="counselor_id" required>
+          <option value="">请选择辅导员</option>
+          {{range .Counselors}}<option value="{{.ID}}" {{if eq $.Class.CounselorUserID .ID}}selected{{end}}>{{.Username}} · {{maskPhone .Phone}}{{if ne .Status "active"}}（已停用，无法指派）{{end}}</option>{{end}}
+        </select>
+      </label>
+      <button class="btn btn-primary" type="submit">保存辅导员</button>
+    </form>
+    {{else}}
+    <p class="reason-text">暂无可用辅导员账号；请先让辅导员使用管理员发放的辅导员注册码完成注册，再回到本页指派。</p>
+    {{end}}
+  </div>
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>学生名单</h2><span class="muted">含已停用学生，共 {{len .Students}} 人</span></div>
+  {{if .Students}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>姓名</th><th>学号</th><th>宿舍</th><th>状态</th><th></th></tr></thead>
+    <tbody>
+    {{range .Students}}<tr>
+      <td data-label="姓名"><a href="/admin/users/{{.UserID}}">{{.Name}}</a></td>
+      <td data-label="学号">{{.StudentNo}}</td>
+      <td data-label="宿舍">{{if .Dorm}}{{.Dorm}}{{else}}<span class="muted">未填写</span>{{end}}</td>
+      <td data-label="状态">{{if eq .Status "active"}}<span class="badge badge-approved">正常</span>{{else}}<span class="badge badge-cancelled">已停用</span>{{end}}</td>
+      <td><a class="btn btn-sm" href="/admin/users/{{.UserID}}">详情</a></td>
+    </tr>{{end}}
+    </tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>最近请假</h2><span class="badge badge-pending">{{.Pending}} 条待审批</span></div>
+  <p class="muted">管理员不参与审批；待审批假条由本班班主任/辅导员处理，24 小时未处理将自动驳回。</p>
+  {{if .Leaves}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>学生</th><th>请假时间</th><th>状态</th><th>提交时间</th><th></th></tr></thead>
+    <tbody>
+    {{range .Leaves}}<tr>
+      <td data-label="学生">{{.StudentName}}<br><span class="muted">{{.StudentNo}}</span></td>
+      <td data-label="请假时间">{{fmtDateTime .StartAt}} 至 {{fmtDateTime .EndAt}}</td>
+      <td data-label="状态">{{template "leave_status" .}}</td>
+      <td data-label="提交时间">{{fmtDateTime .CreatedAt}}</td>
+      <td><a class="btn btn-sm" href="/admin/leaves/{{.ID}}">详情</a></td>
+    </tr>{{end}}
+    </tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+<div class="card">
+  <h2>解散班级</h2>
+  <p class="danger-text">解散不可撤销：学生账号保留并转为“暂无班级”，待审批假条全部取消；已批准假条保留，二维码和代理链接失效。</p>
+  <p class="muted">仅用于提前救回学生。若只是暂无班主任，请在上方指派班主任以取消 7 天清理倒计时。</p>
+  <form method="post" action="/admin/classes/{{.Class.ID}}/disband" class="rowform" data-confirm="解散班级不可撤销：学生账号保留但转为暂无班级，所有待审批假条将取消。确定解散“{{.Class.Name}}”吗？">
+    {{template "csrf" .}}
+    <label class="field grow"><span>输入完整班级名确认</span><input name="confirm_name" placeholder="请输入：{{.Class.Name}}" autocomplete="off" required></label>
+    <button class="btn btn-danger" type="submit">解散班级</button>
+  </form>
+</div>
+{{end}}

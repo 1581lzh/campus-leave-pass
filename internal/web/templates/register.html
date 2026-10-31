@@ -1,0 +1,22 @@
+{{define "content"}}
+<section class="narrow">
+  <div class="card">
+    <h1>如何获得账号</h1>
+    <div class="grid-2">
+      <article class="feature">
+        <h2>学生</h2>
+        <p>学生账号不能自助注册。请由本班班主任或辅导员通过 XLSX 模板导入创建；初始密码由老师通过安全渠道分发。</p>
+        <p class="muted">首次登录后请尽快在“个人资料”中修改密码。忘记密码可使用“忘记密码”发起辅助重置。</p>
+        <a class="btn" href="/login">学生登录</a>
+      </article>
+      <article class="feature">
+        <h2>教职工</h2>
+        <p>班主任、辅导员、社区老师需要使用管理员发放的注册码注册，注册码只能使用一次或限定次数。</p>
+        <p class="muted">没有注册码请联系管理员。注册码过期、用完或停用时系统会说明原因。</p>
+        <a class="btn" href="/staff/register">使用注册码注册</a>
+      </article>
+    </div>
+    <p class="muted">管理员账号只能由现有管理员创建，不能自助注册，也不能使用教职工注册码创建。</p>
+  </div>
+</section>
+{{end}}

@@ -1,0 +1,28 @@
+# 构建产物
+/bin/
+
+# SQLite 数据库与 WAL/SHM 伴随文件（数据库不入库）
+*.db
+*.db-shm
+*.db-wal
+
+# 本机环境变量与密钥
+.env
+*.pem
+*.key
+*.crt
+
+# 本机 OpenCode/MCP 配置（含绝对路径，按机器生成）
+opencode.json
+
+# 前端依赖
+web/tailwind/node_modules/
+
+# 日志与本地备份
+*.log
+*.bak
+*.prev
+backups/
+
+# 注意：internal/web/static/app.css 是 go:embed 的构建产物，必须入库，
+# 因此这里不能忽略 internal/web/static/ 或 *.css。

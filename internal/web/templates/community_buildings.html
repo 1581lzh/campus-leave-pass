@@ -1,0 +1,15 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">社区老师</p><h1>负责楼栋</h1><p class="muted">请假可见范围严格按楼栋匹配；修改后立即生效。</p></div><div class="head-actions"><a class="btn" href="/c">返回首页</a></div></section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+<div class="card">
+  <form method="post" action="/c/buildings" class="stack">
+    {{template "csrf" .}}
+    <fieldset class="field"><legend>选择楼栋</legend>
+      <div class="checks">{{range .Options}}<label class="check"><input type="checkbox" name="buildings" value="{{.}}" {{if contains $.Selected .}}checked{{end}}> {{.}}</label>{{end}}</div>
+    </fieldset>
+    <p class="muted">已选楼栋：{{if .Selected}}{{range $i, $b := .Selected}}{{if $i}}、{{end}}{{$b}}{{end}}{{else}}无{{end}}</p>
+    <label class="field"><span>补充楼栋（可选）</span><input name="custom" value="{{.Custom}}" placeholder="多个楼栋用逗号或空格分隔"><small>用于校区自定义楼栋名；保存时会与勾选项合并。</small></label>
+    <button class="btn btn-primary" type="submit">保存负责楼栋</button>
+  </form>
+</div>
+{{end}}

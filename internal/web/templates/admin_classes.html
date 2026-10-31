@@ -1,0 +1,53 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">管理员</p><h1>班级管理</h1><p class="muted">班级由班主任或辅导员创建，管理员不代建；待认领满 7 天将自动清理班级和学生账号，假条保留 40 天。</p></div>
+  <div class="head-actions"><a class="btn" href="/archived/leaves">保留假条</a></div>
+</section>
+<div class="card">
+  <form method="get" action="/admin/classes" class="searchbar">
+    <label class="field grow"><span>搜索班级或专业系</span><input name="q" value="{{.Query}}" placeholder="班级名 / 专业系"></label>
+    <button class="btn btn-primary" type="submit">搜索</button>
+    {{if .Query}}<a class="btn" href="/admin/classes">清除</a>{{end}}
+  </form>
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>当前班级</h2><span class="muted">共 {{len .Classes}} 个</span></div>
+  {{if .Classes}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>班级</th><th>专业系</th><th>班主任</th><th>辅导员</th><th>学生数</th><th>状态</th><th></th></tr></thead>
+    <tbody>
+    {{range .Classes}}<tr>
+      <td data-label="班级"><a class="list-title" href="/admin/classes/{{.ID}}">{{.Name}}</a></td>
+      <td data-label="专业系">{{.Department}}</td>
+      <td data-label="班主任">{{if .TeacherName}}{{.TeacherName}}{{else}}<span class="danger-text">待认领</span>{{end}}</td>
+      <td data-label="辅导员">{{if .CounselorName}}{{.CounselorName}}{{else}}<span class="muted">暂无</span>{{end}}</td>
+      <td data-label="学生数">{{.StudentCount}}</td>
+      <td data-label="状态">{{if .Unclaimed}}<span class="badge badge-pending">待认领 · 剩 {{daysLeft .DeleteDueAt}} 天</span><br><span class="muted">清理截止 {{fmtDateTime .DeleteDueAt}}</span>{{else}}<span class="badge badge-approved">正常</span>{{end}}</td>
+      <td><a class="btn btn-sm" href="/admin/classes/{{.ID}}">详情</a></td>
+    </tr>{{end}}
+    </tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+<div class="card table-card">
+  <div class="card-head"><h2>已清理班级快照</h2><a href="/archived/leaves">查看保留假条</a></div>
+  <p class="muted">待认领满 7 天清理后保留 40 天；保留假条在 <a href="/archived/leaves">/archived/leaves</a> 查看，到期自动删除。</p>
+  {{if .Archived}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>班级</th><th>专业系</th><th>最后班主任</th><th>最后辅导员</th><th>清理时间</th><th>保留至</th><th>学生数</th><th>假条数</th></tr></thead>
+    <tbody>
+    {{range .Archived}}<tr>
+      <td data-label="班级">{{.ClassName}}</td>
+      <td data-label="专业系">{{.Department}}</td>
+      <td data-label="最后班主任">{{if .LastTeacherName}}{{.LastTeacherName}}{{else}}—{{end}}</td>
+      <td data-label="最后辅导员">{{if .LastCounselorName}}{{.LastCounselorName}}{{else}}—{{end}}</td>
+      <td data-label="清理时间">{{fmtDateTime .CleanedAt}}</td>
+      <td data-label="保留至">{{fmtDate .RetainUntil}}</td>
+      <td data-label="学生数">{{.StudentCount}}</td>
+      <td data-label="假条数">{{.LeaveCount}}</td>
+    </tr>{{end}}
+    </tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

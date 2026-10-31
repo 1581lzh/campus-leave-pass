@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="narrow">
+  <div class="card center">
+    <p class="error-code">{{.Status}}</p>
+    <h1>{{.Title}}</h1>
+    <p class="lead">{{.Reason}}</p>
+    <div class="actions center-actions">
+      <a class="btn btn-primary" href="{{if .Authed}}{{if eq .User.Role "student"}}/s{{else if eq .User.Role "community"}}/c{{else if eq .User.Role "admin"}}/admin{{else}}/t{{end}}{{else}}/{{end}}">返回首页</a>
+      <button class="btn" type="button" data-back>返回上一页</button>
+    </div>
+  </div>
+</section>
+{{end}}

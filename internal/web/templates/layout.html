@@ -1,0 +1,99 @@
+{{define "layout"}}<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{{.Title}} · 校园请假通行</title>
+  <link rel="stylesheet" href="{{asset "/static/app.css"}}">
+  <script src="{{asset "/static/motion.js"}}" defer></script>
+  <script src="{{asset "/static/app.js"}}" defer></script>
+</head>
+<body class="app">
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{{if .Authed}}/{{else}}/{{end}}">
+        <span class="brand-mark" aria-hidden="true">LP</span>
+        <span class="brand-text">校园请假通行</span>
+      </a>
+      {{if .Authed}}
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="mainnav">菜单</button>
+      <nav id="mainnav" class="mainnav" aria-label="主导航">
+        {{if eq .User.Role "student"}}
+          {{if ne .User.Status "soft_deleted"}}
+          <a href="/s" class="{{if eq .Page "student_dashboard"}}active{{end}}">首页</a>
+          <a href="/s/leave/new" class="{{if eq .Page "student_leave_new"}}active{{end}}">新建请假</a>
+          {{end}}
+          <a href="/s/leaves" class="{{if or (eq .Page "student_leaves") (eq .Page "student_leave")}}active{{end}}">我的请假</a>
+          {{if ne .User.Status "soft_deleted"}}
+          <a href="/s/notifications" class="{{if eq .Page "notifications"}}active{{end}}">通知{{if gt .Unread 0}}<span class="nav-dot">{{.Unread}}</span>{{end}}</a>
+          <a href="/s/profile" class="{{if eq .Page "profile"}}active{{end}}">个人资料</a>
+          {{end}}
+        {{else if or (eq .User.Role "teacher") (eq .User.Role "counselor")}}
+          <a href="/t" class="{{if eq .Page "teacher_dashboard"}}active{{end}}">首页</a>
+          <a href="/t/classes" class="{{if or (eq .Page "teacher_classes") (eq .Page "class_detail") (eq .Page "class_students") (eq .Page "class_imports") (eq .Page "class_counselor")}}active{{end}}">我的班级</a>
+          {{if eq .User.Role "teacher"}}<a href="/t/classes/claim" class="{{if eq .Page "class_claim"}}active{{end}}">认领班级</a>{{end}}
+          {{if eq .User.Role "counselor"}}<a href="/t/class-invitations" class="{{if eq .Page "class_invitations"}}active{{end}}">班级邀请</a>{{end}}
+          <a href="/t/recover" class="{{if eq .Page "staff_recover"}}active{{end}}">辅助重置</a>
+          <a href="/archived/leaves" class="{{if or (eq .Page "archived_leaves") (eq .Page "archived_leave")}}active{{end}}">保留假条</a>
+          <a href="/t/notifications" class="{{if eq .Page "notifications"}}active{{end}}">通知{{if gt .Unread 0}}<span class="nav-dot">{{.Unread}}</span>{{end}}</a>
+          <a href="/t/profile" class="{{if eq .Page "profile"}}active{{end}}">个人资料</a>
+        {{else if eq .User.Role "community"}}
+          <a href="/c" class="{{if eq .Page "community_dashboard"}}active{{end}}">首页</a>
+          <a href="/c/buildings" class="{{if eq .Page "community_buildings"}}active{{end}}">负责楼栋</a>
+          <a href="/c/students" class="{{if eq .Page "community_students"}}active{{end}}">学生宿舍</a>
+          <a href="/c/leaves" class="{{if or (eq .Page "community_leaves") (eq .Page "community_leave")}}active{{end}}">请假查询</a>
+          <a href="/archived/leaves" class="{{if or (eq .Page "archived_leaves") (eq .Page "archived_leave")}}active{{end}}">保留假条</a>
+          <a href="/c/recover" class="{{if eq .Page "staff_recover"}}active{{end}}">辅助重置</a>
+          <a href="/c/notifications" class="{{if eq .Page "notifications"}}active{{end}}">通知{{if gt .Unread 0}}<span class="nav-dot">{{.Unread}}</span>{{end}}</a>
+          <a href="/c/profile" class="{{if eq .Page "profile"}}active{{end}}">个人资料</a>
+        {{else if eq .User.Role "admin"}}
+          <a href="/admin" class="{{if eq .Page "admin_dashboard"}}active{{end}}">概览</a>
+          <a href="/admin/leaves" class="{{if or (eq .Page "admin_leaves") (eq .Page "admin_leave")}}active{{end}}">请假查询</a>
+          <a href="/admin/reports" class="{{if eq .Page "admin_reports"}}active{{end}}">报表</a>
+          <a href="/admin/classes" class="{{if or (eq .Page "admin_classes") (eq .Page "admin_class")}}active{{end}}">班级</a>
+          <a href="/admin/users" class="{{if or (eq .Page "admin_users") (eq .Page "admin_user") (eq .Page "admin_dorm_edits")}}active{{end}}">用户</a>
+          <a href="/admin/imports" class="{{if eq .Page "admin_imports"}}active{{end}}">导入</a>
+          <a href="/admin/settings/registration-codes" class="{{if eq .Page "admin_codes"}}active{{end}}">注册码</a>
+          <a href="/admin/recover" class="{{if eq .Page "admin_recover"}}active{{end}}">辅助重置</a>
+          <a href="/admin/community" class="{{if eq .Page "admin_community"}}active{{end}}">社区老师</a>
+          <a href="/archived/leaves" class="{{if or (eq .Page "archived_leaves") (eq .Page "archived_leave")}}active{{end}}">保留假条</a>
+          <a href="/admin/security" class="{{if eq .Page "admin_security"}}active{{end}}">安全</a>
+          <a href="/admin/audit" class="{{if eq .Page "admin_audit"}}active{{end}}">审计</a>
+          <a href="/admin/notifications" class="{{if eq .Page "notifications"}}active{{end}}">通知{{if gt .Unread 0}}<span class="nav-dot">{{.Unread}}</span>{{end}}</a>
+          <a href="/admin/profile" class="{{if eq .Page "profile"}}active{{end}}">个人资料</a>
+        {{end}}
+      </nav>
+      <div class="userbox">
+        <span class="user-name">{{.User.Username}}</span>
+        <span class="role-chip">{{roleName .User.Role}}</span>
+        <form method="post" action="/logout" class="inline">
+          {{template "csrf" .}}
+          <button class="btn btn-ghost btn-sm" type="submit">退出</button>
+        </form>
+      </div>
+      {{else}}
+      <nav class="mainnav public" aria-label="主导航">
+        <a href="/login">学生登录</a>
+        <a href="/staff/login">教职工登录</a>
+        <a href="/admin/login">管理员</a>
+      </nav>
+      {{end}}
+    </div>
+  </header>
+
+  {{if .FlashMsg}}<div class="flash flash-{{.FlashKind}}" role="status" aria-live="polite"><span>{{.FlashMsg}}</span><button type="button" class="flash-close" data-dismiss aria-label="关闭提示">×</button></div>{{end}}
+
+  <main id="main" class="main">
+    {{template "content" .}}
+  </main>
+
+  <footer class="footer">
+    <span>校园请假通行系统</span>
+    <span>时间按北京时间显示 · 所有拒绝操作都会说明原因和下一步</span>
+  </footer>
+
+  {{if eq .Page "teacher_dashboard"}}{{with .Popup}}<div class="modal-backdrop" data-popup-modal hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="popup-title"><h2 id="popup-title">班主任提醒</h2><p>{{.}}</p><p class="muted">本提醒每天只出现一次；你随时可以在班级设置中邀请辅导员。</p><button type="button" class="btn btn-primary" data-popup-close>我知道了</button></div></div>{{end}}{{end}}
+</body>
+</html>{{end}}

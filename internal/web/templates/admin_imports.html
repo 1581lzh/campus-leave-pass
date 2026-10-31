@@ -1,0 +1,26 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">管理员</p><h1>学生导入记录</h1><p class="muted">只记录批次元数据，不保存文件/密码，不提供下载；导入失败时整批回滚。学生账号由本班班主任/辅导员导入，管理员不代为创建。</p></div>
+  <div class="head-actions"><a class="btn" href="/admin/users?role=student">学生账号</a></div>
+</section>
+<div class="card table-card">
+  {{if .Batches}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>时间</th><th>班级</th><th>导入人</th><th>文件名</th><th>总行数</th><th>成功</th><th>失败</th><th>状态</th><th>IP</th></tr></thead>
+    <tbody>
+    {{range .Batches}}<tr>
+      <td data-label="时间">{{fmtDateTime .CreatedAt}}</td>
+      <td data-label="班级">{{if .ClassName}}{{.ClassName}}{{else}}<span class="muted">班级已解散</span>{{end}}</td>
+      <td data-label="导入人">{{if .ImporterName}}{{.ImporterName}}{{else}}—{{end}}</td>
+      <td data-label="文件名">{{.FileName}}</td>
+      <td data-label="总行数">{{.TotalRows}}</td>
+      <td data-label="成功">{{.CreatedCount}}</td>
+      <td data-label="失败">{{.ErrorCount}}</td>
+      <td data-label="状态">{{if eq .Status "success"}}<span class="badge badge-approved">成功</span>{{else if eq .Status "failed"}}<span class="badge badge-rejected">失败</span>{{else}}{{.Status}}{{end}}</td>
+      <td data-label="IP">{{.IP}}</td>
+    </tr>{{end}}
+    </tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

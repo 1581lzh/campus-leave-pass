@@ -1,0 +1,48 @@
+{{define "content"}}
+<section class="page-head"><div><p class="eyebrow">账号</p><h1>个人资料</h1><p class="muted">{{.Profile.Username}} · {{roleName .Profile.Role}}</p></div></section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}
+<div class="grid-2">
+  <div class="card">
+    <h2>账号信息</h2>
+    <dl class="detail-list">
+      <div><dt>用户名</dt><dd>{{.Profile.Username}}</dd></div>
+      {{if .Profile.StudentNo}}<div><dt>学号</dt><dd>{{.Profile.StudentNo}}</dd></div>{{end}}
+      <div><dt>角色</dt><dd>{{roleName .Profile.Role}}</dd></div>
+      <div><dt>状态</dt><dd>{{if eq .Profile.Status "active"}}正常{{else}}停用（只读保留期）{{end}}</dd></div>
+      {{if .Profile.Phone}}<div><dt>绑定手机号</dt><dd>{{maskPhone .Profile.Phone}}</dd></div>{{end}}
+      <div><dt>最近登录</dt><dd>{{fmtDateTime .Profile.LastLoginAt}}</dd></div>
+      {{if .Profile.PasswordIsInitial}}<div><dt>密码</dt><dd><span class="warn-text">仍在使用初始密码</span></dd></div>{{end}}
+    </dl>
+    {{if .IsStudent}}
+      <h3>学生信息</h3>
+      {{if .StudentMissing}}<p class="muted">暂无班级与宿舍信息，请联系管理员。</p>{{else}}
+      <dl class="detail-list">
+        <div><dt>班级</dt><dd>{{if .Student.ClassName}}{{.Student.ClassName}}{{else}}暂无班级{{end}}</dd></div>
+        <div><dt>专业系</dt><dd>{{.Student.Department}}</dd></div>
+        <div><dt>宿舍</dt><dd>{{if .Student.Dorm}}{{.Student.Dorm}}{{else}}未填写{{end}}</dd></div>
+      </dl>
+      {{end}}
+    {{end}}
+  </div>
+  <div class="card">
+    <h2>修改密码</h2>
+    <p class="muted">修改成功后当前会话会退出，请使用新密码重新登录。</p>
+    <form method="post" action="{{.Action}}" class="stack">
+      {{template "csrf" .}}
+      <label class="field"><span>当前密码</span><input type="password" name="old_password" autocomplete="current-password" required></label>
+      <label class="field"><span>新密码</span><input type="password" name="password" autocomplete="new-password" required><small>5–19 位字母、数字或英文符号；管理员为 1–19 位。</small></label>
+      <label class="field"><span>确认新密码</span><input type="password" name="password2" autocomplete="new-password" required></label>
+      <button class="btn btn-primary" type="submit">修改密码</button>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <h2>登录设备</h2>
+  <p class="muted">当前账号有 <strong>{{.SessionCount}}</strong> 个有效会话（含本机）。退出其他设备不会影响当前浏览器。</p>
+  <form method="post" action="{{.RevokeAction}}" class="actions">
+    {{template "csrf" .}}
+    <button class="btn" type="submit" data-confirm="确定退出其他设备？其他浏览器或手机上的本账号登录会立即失效。">退出其他设备</button>
+  </form>
+</div>
+{{end}}

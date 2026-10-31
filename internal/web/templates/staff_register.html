@@ -1,0 +1,19 @@
+{{define "content"}}
+<section class="auth-wrap">
+  <div class="card auth-card auth-wide">
+    <h1>教职工注册</h1>
+    <p class="muted">注册码由管理员发放；角色由注册码决定，注册后不能自行更改。注册码不可用于学生或管理员。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="/staff/register" class="stack">
+      {{template "csrf" .}}
+      <label class="field"><span>注册码</span><input name="code" value="{{.Code}}" placeholder="XXXX-XXXX-XXXX" autocomplete="off" required></label>
+      <label class="field"><span>用户名</span><input name="username" value="{{.Username}}" autocomplete="username" required><small>1–6 个字符，中文、字母或数字；用于登录和显示。</small></label>
+      <label class="field"><span>手机号</span><input name="phone" value="{{.Phone}}" inputmode="tel" autocomplete="tel" required><small>用于忘记密码时核验，必须唯一。</small></label>
+      <label class="field"><span>密码</span><input type="password" name="password" autocomplete="new-password" required><small>5–19 位字母、数字或英文符号，不能有空格。</small></label>
+      <label class="field"><span>确认密码</span><input type="password" name="password2" autocomplete="new-password" required></label>
+      <button class="btn btn-primary btn-block" type="submit">注册并登录</button>
+    </form>
+    <div class="auth-links"><a href="/staff/login">已有账号，去登录</a><a href="/register">账号说明</a></div>
+  </div>
+</section>
+{{end}}

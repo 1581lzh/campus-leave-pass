@@ -1,0 +1,44 @@
+{{define "content"}}
+<section class="page-head">
+  <div><p class="eyebrow">{{.Class.Name}}</p><h1>学生名单</h1><p class="muted">{{len .Students}} 名在册学生 · {{.Class.Department}}</p></div>
+  <div class="head-actions"><a class="btn" href="/t/classes/{{.Class.ID}}">班级详情</a><a class="btn" href="/t/classes/{{.Class.ID}}/imports">导入记录</a><a class="btn" href="/t/classes/{{.Class.ID}}/students/import/template">下载模板</a></div>
+</section>
+{{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+{{if .ImportDone}}<div class="alert alert-ok">{{.ImportDone}}</div>{{end}}
+{{if .ImportErrors}}<div class="alert alert-error"><strong>导入未执行，请修正以下错误：</strong><ul>{{range .ImportErrors}}<li>{{.String}}</li>{{end}}</ul></div>{{end}}
+<div class="card" id="import">
+  <h2>导入学生</h2>
+  {{if .CanImport}}
+  <p class="muted">仅支持 .xlsx，最大 5MB、500 行；导入全有或全无。请使用本站模板，避免第 4–7 列班级信息不一致。</p>
+  <form method="post" action="/t/classes/{{.Class.ID}}/students/import" enctype="multipart/form-data" class="rowform">
+    {{template "csrf" .}}
+    <label class="field grow"><span>学生名单 XLSX</span><input type="file" name="file" accept=".xlsx" required></label>
+    <button class="btn btn-primary" type="submit">上传并导入</button>
+  </form>
+  {{else}}
+  <p class="reason-text">{{.ImportReason}}</p>
+  <span class="btn" aria-disabled="true" data-reason="{{.ImportReason}}" tabindex="0">上传并导入</span>
+  {{end}}
+</div>
+<div class="card">
+  <form method="get" action="/t/classes/{{.Class.ID}}/students" class="searchbar">
+    <label class="field grow"><span>搜索姓名或学号</span><input name="q" value="{{.Query}}"></label><button class="btn" type="submit">搜索</button>
+  </form>
+  {{if .Students}}
+  <div class="table-scroll"><table>
+    <thead><tr><th>姓名</th><th>学号</th><th>宿舍</th><th>导入时间</th><th>修正姓名</th><th>修正宿舍</th><th>请假</th></tr></thead>
+    <tbody>{{range .Students}}
+      <tr>
+        <td data-label="姓名">{{.Name}}</td>
+        <td data-label="学号">{{.StudentNo}}</td>
+        <td data-label="宿舍">{{if .Dorm}}{{.Dorm}}{{else}}未填写{{end}}</td>
+        <td data-label="导入时间">{{fmtDateTime .ImportedAt}}</td>
+        <td data-label="修正姓名"><form method="post" action="/t/classes/{{$.Class.ID}}/students/{{.UserID}}/name" class="inline">{{template "csrf" $}}<input name="name" value="{{.Name}}" aria-label="姓名" required><button class="btn btn-sm" type="submit">保存</button></form></td>
+        <td data-label="修正宿舍"><form method="post" action="/t/classes/{{$.Class.ID}}/students/{{.UserID}}/dorm" class="inline">{{template "csrf" $}}<input type="hidden" name="old_dorm" value="{{.Dorm}}"><input name="dorm" value="{{.Dorm}}" placeholder="楼栋-房间" aria-label="宿舍"><input type="hidden" name="reason" value="老师修正宿舍"><button class="btn btn-sm" type="submit">保存</button></form></td>
+        <td data-label="请假"><a class="btn btn-sm btn-primary" href="/t/classes/{{$.Class.ID}}/students/{{.UserID}}/leave/new">代请假</a></td>
+      </tr>
+    {{end}}</tbody>
+  </table></div>
+  {{else}}{{template "empty"}}{{end}}
+</div>
+{{end}}

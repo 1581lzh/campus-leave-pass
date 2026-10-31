@@ -1,0 +1,18 @@
+{{define "content"}}
+<section class="narrow">
+  <div class="card">
+    <h1>申请重置密码</h1>
+    <p class="muted">账号停用后仍可申请重置，但只能查看历史。提交后请将申请码告诉本班班主任或辅导员。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <dl class="detail-list">
+      <div><dt>姓名</dt><dd>{{.Student.Name}}</dd></div>
+      <div><dt>学号</dt><dd>{{.Student.StudentNo}}</dd></div>
+    </dl>
+    <form method="post" action="/s/recover" class="stack">
+      {{template "csrf" .}}
+      <button class="btn btn-primary" type="submit">提交辅助重置申请</button>
+    </form>
+    <p class="muted">若你仍能登录，可直接在个人资料中修改密码。</p>
+  </div>
+</section>
+{{end}}
