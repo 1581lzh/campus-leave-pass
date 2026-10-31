@@ -1,11 +1,8 @@
 package web
 
 import (
-	"encoding/csv"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 
 	"leavepass/internal/app"
 	"leavepass/internal/validate"
@@ -226,58 +223,6 @@ func (s *Server) renderAdminLeaves(w http.ResponseWriter, r *http.Request, statu
 		Buildings: s.store.CampusBuildings(), Classes: classes,
 		PageNo: f.Page, Pages: pagesOf(total, 50), Query: r.URL.RawQuery,
 	})
-}
-
-func (s *Server) adminLeavesExport(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.require(w, r, "admin"); !ok {
-		return
-	}
-	f := leaveFilterFromQuery(r)
-	f.Page, f.PageSize = 1, 100000
-	list, _, err := s.store.AdminLeaves(r.Context(), f)
-	if err != nil {
-		s.error(w, r, http.StatusUnprocessableEntity, "导出失败", err.Error()+"；请检查筛选日期后重试。")
-		return
-	}
-	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	w.Header().Set("Content-Disposition", "attachment; filename=leave-requests.csv")
-	w.Header().Set("Cache-Control", "no-store")
-	_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
-	cw := csv.NewWriter(w)
-	_ = cw.Write([]string{"假条ID", "学生姓名", "学号", "联系电话", "班级", "专业系", "楼栋", "房间",
-		"班主任", "辅导员", "开始时间", "结束时间", "状态", "提交时间", "审批结果", "审批人", "驳回原因", "取消原因"})
-	for _, l := range list {
-		_ = cw.Write(csvRow(
-			strconv.FormatInt(l.ID, 10), l.StudentName, l.StudentNo, l.ContactPhone, l.ClassName, l.Department,
-			l.DormBuilding, l.DormRoom, l.TeacherName, l.CounselorName,
-			csvTime(l.StartAt), csvTime(l.EndAt), statusName(l.Status), csvTime(l.CreatedAt),
-			decisionText(l), l.ApproverName, l.RejectReason, l.CancelReason,
-		))
-	}
-	cw.Flush()
-}
-
-func csvTime(ts int64) string {
-	if ts <= 0 {
-		return ""
-	}
-	return time.Unix(ts, 0).In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04")
-}
-
-// csvRow neutralises spreadsheet formulas in every user-controlled cell.
-func csvRow(cells ...string) []string {
-	out := make([]string, len(cells))
-	for i, c := range cells {
-		c = strings.TrimSpace(c)
-		if c != "" {
-			switch c[0] {
-			case '=', '+', '-', '@', '\t', '\r':
-				c = "'" + c
-			}
-		}
-		out[i] = c
-	}
-	return out
 }
 
 func (s *Server) adminLeaveDetail(w http.ResponseWriter, r *http.Request) {

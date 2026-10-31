@@ -30,6 +30,12 @@ func (c *webClock) Now() time.Time {
 	return time.Unix(c.unix, 0).In(config.Location)
 }
 
+func (c *webClock) Set(t time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.unix = t.Unix()
+}
+
 func newWebStore(t *testing.T) (*app.Store, *webClock, app.User) {
 	t.Helper()
 	clock := &webClock{unix: time.Date(2026, 3, 15, 10, 0, 0, 0, config.Location).Unix()}
@@ -361,59 +367,4 @@ func TestCSRFProtection(t *testing.T) {
 			t.Fatalf("状态 = %d，期望 403", rec.Code)
 		}
 	})
-}
-
-func TestCSVRowFormulaInjection(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{name: "等号", in: "=1+1", want: "'=1+1"},
-		{name: "加号", in: "+x", want: "'+x"},
-		{name: "减号", in: "-x", want: "'-x"},
-		{name: "at", in: "@x", want: "'@x"},
-		{name: "前导 tab 加公式", in: "\t=1+1", want: "'=1+1"},
-		{name: "普通文本不变", in: "张三", want: "张三"},
-		{name: "普通文本去空格", in: "  张三  ", want: "张三"},
-		{name: "中间等号不变", in: "a=b", want: "a=b"},
-		{name: "空字符串", in: "", want: ""},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			row := csvRow(tc.in, "第二列")
-			if len(row) != 2 {
-				t.Fatalf("csvRow 长度 = %d", len(row))
-			}
-			if row[0] != tc.want {
-				t.Fatalf("csvRow(%q) = %q，期望 %q", tc.in, row[0], tc.want)
-			}
-			if row[1] != "第二列" {
-				t.Fatalf("后续列被破坏: %q", row[1])
-			}
-		})
-	}
-}
-
-func TestAdminCSVExportHeaders(t *testing.T) {
-	store, _, admin := newWebStore(t)
-	srv, err := New(store)
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	cookie, _ := webSession(t, store, admin)
-	rec := webRequest(t, srv, http.MethodGet, "/admin/leaves/export", cookie, nil, "", "")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("状态 = %d，期望 200", rec.Code)
-	}
-	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/csv") {
-		t.Fatalf("Content-Type = %q", ct)
-	}
-	body := rec.Body.Bytes()
-	if len(body) < 3 || body[0] != 0xEF || body[1] != 0xBB || body[2] != 0xBF {
-		t.Fatalf("缺少 UTF-8 BOM: %v", body[:min(3, len(body))])
-	}
-	if !strings.Contains(string(body), "学生姓名") || !strings.Contains(string(body), "驳回原因") {
-		t.Fatalf("CSV 表头异常: %s", string(body))
-	}
 }

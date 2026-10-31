@@ -1,0 +1,96 @@
+{{define "content"}}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{if .IsAdmin}}管理员{{else if .IsCommunity}}社区老师{{else}}教职工{{end}}</p>
+    <h1>导出请假记录</h1>
+    <p class="muted">导出为 Excel（.xlsx）。默认最近 6 个月，可按学生和时间范围筛选，单次最多 {{.MaxRows}} 条。</p>
+  </div>
+  <div class="head-actions"><a class="btn" href="{{.BackURL}}">返回</a></div>
+</section>
+{{if .IsCommunity}}
+<div class="alert alert-info">社区老师只能导出所负责楼栋的<strong>已批准</strong>请假；导出文件不包含联系电话。</div>
+{{if not .Buildings}}<div class="alert alert-warn">你尚未选择负责楼栋，暂时没有可导出的范围。请先到 <a href="/c/buildings">负责楼栋</a> 选择楼栋。</div>{{end}}
+{{else if .IsAdmin}}
+<div class="alert alert-info">“导出范围”四选一：全部记录、指定班级、指定楼栋或整个专业系；下方对应选择框只在该范围下生效。</div>
+{{end}}
+<div class="card">
+  <form method="get" action="{{.Action}}" class="filters">
+    {{if .IsAdmin}}
+    <label class="field"><span>导出范围</span>
+      <select name="scope">
+        <option value="all" {{if eq .Scope "all"}}selected{{end}}>全部请假记录</option>
+        <option value="class" {{if eq .Scope "class"}}selected{{end}}>指定班级</option>
+        <option value="building" {{if eq .Scope "building"}}selected{{end}}>指定楼栋</option>
+        <option value="department" {{if eq .Scope "department"}}selected{{end}}>整个专业系</option>
+      </select>
+    </label>
+    <label class="field"><span>班级</span>
+      <select name="class_id">
+        <option value="">请选择班级</option>
+        {{range .Classes}}<option value="{{.ID}}" {{if eq $.ClassID .ID}}selected{{end}}>{{.Name}}（{{.Department}}）</option>{{end}}
+      </select>
+      <small>仅“指定班级”时生效</small>
+    </label>
+    <label class="field"><span>楼栋</span>
+      <select name="building">
+        <option value="">请选择楼栋</option>
+        {{range .Buildings}}<option value="{{.}}" {{if eq $.Building .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+      <small>仅“指定楼栋”时生效</small>
+    </label>
+    <label class="field"><span>专业系</span>
+      <select name="department">
+        <option value="">请选择专业系</option>
+        {{range .Departments}}<option value="{{.}}" {{if eq $.Department .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+      <small>仅“整个专业系”时生效</small>
+    </label>
+    {{else if .IsCommunity}}
+    <label class="field"><span>楼栋</span>
+      <select name="building">
+        <option value="">全部负责楼栋</option>
+        {{range .Buildings}}<option value="{{.}}" {{if eq $.Building .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    {{else}}
+      {{if .HasFixedClass}}
+      <div class="field"><span>班级</span><div class="pre">{{.FixedClass.Name}}（{{.FixedClass.Department}}）</div><small>班主任只能导出本班记录</small></div>
+      {{else if eq .User.Role "counselor"}}
+      <label class="field"><span>班级</span>
+        <select name="class_id">
+          <option value="">名下全部班级</option>
+          {{range .Classes}}<option value="{{.ID}}" {{if eq $.ClassID .ID}}selected{{end}}>{{.Name}}（{{.Department}}）</option>{{end}}
+        </select>
+      </label>
+      {{else}}
+      <div class="field"><span>班级</span><div class="pre">当前没有班级</div><small>仍可导出你曾审批过的历史快照记录</small></div>
+      {{end}}
+    {{end}}
+    <label class="field"><span>时间范围</span>
+      <select name="range">
+        <option value="6m" {{if eq .Range "6m"}}selected{{end}}>最近 6 个月（默认）</option>
+        <option value="1w" {{if eq .Range "1w"}}selected{{end}}>最近 1 周</option>
+        <option value="1m" {{if eq .Range "1m"}}selected{{end}}>最近 1 个月</option>
+        <option value="3m" {{if eq .Range "3m"}}selected{{end}}>最近 3 个月</option>
+        <option value="1y" {{if eq .Range "1y"}}selected{{end}}>最近 1 年</option>
+        <option value="all" {{if eq .Range "all"}}selected{{end}}>全部时间</option>
+        <option value="custom" {{if eq .Range "custom"}}selected{{end}}>自定义范围</option>
+      </select>
+      <small>按请假开始时间计算</small>
+    </label>
+    <label class="field"><span>自定义开始</span><input type="date" name="from" value="{{.From}}"><small>仅“自定义范围”时生效</small></label>
+    <label class="field"><span>自定义结束</span><input type="date" name="to" value="{{.To}}"><small>仅“自定义范围”时生效</small></label>
+    <label class="field grow"><span>学生</span><input name="student" value="{{.Student}}" maxlength="32" placeholder="完整学号或完整姓名，留空导出范围内全部"><small>指定学生时支持任意时间范围；填写“全部时间”可导出该生所有记录</small></label>
+    <div class="filter-actions"><button class="btn btn-primary" type="submit">导出 Excel</button></div>
+  </form>
+</div>
+<div class="card">
+  <h2>导出说明</h2>
+  <ul class="list">
+    <li class="list-main"><span class="list-title">时间窗口</span><span class="list-sub">默认最近 6 个月；可选择最近 1 周、1 个月、3 个月、1 年、全部时间，或自定义开始/结束日期。</span></li>
+    <li class="list-main"><span class="list-title">按学生导出</span><span class="list-sub">填写完整学号或完整姓名，并配合时间范围，即可只导出该学生的某段时间记录；时间范围选“全部时间”即导出该生全部记录。</span></li>
+    <li class="list-main"><span class="list-title">权限范围</span><span class="list-sub">{{if .IsAdmin}}管理员可导出全部记录，或按班级、楼栋、专业系限定。{{else if .IsCommunity}}仅限所负责楼栋的已批准请假，且不含联系电话。{{else}}班主任仅限本班；辅导员限名下班级；包含你曾审批过的历史快照记录。{{end}}</span></li>
+    <li class="list-main"><span class="list-title">文件内容</span><span class="list-sub">第一个工作表为请假明细，第二个工作表记录导出时间、导出人、范围、时间窗口与筛选条件，便于留档核对。</span></li>
+  </ul>
+</div>
+{{end}}

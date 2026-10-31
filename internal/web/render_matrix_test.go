@@ -14,7 +14,7 @@ import (
 // renderCase is one GET request in the render matrix.
 //
 // kind selects the body assertion because a few GET routes return binaries
-// (QR PNG, XLSX template, CSV export) or JSON instead of a rendered layout.
+// (QR PNG, XLSX template, Excel export) or JSON instead of a rendered layout.
 type renderCase struct {
 	name   string
 	path   string
@@ -253,6 +253,7 @@ func TestRenderMatrix(t *testing.T) {
 		{name: "teacher leave pending", path: "/t/leaves/" + itoa(pendingID), cookie: teacherCookie},
 		{name: "teacher leave approved", path: "/t/leaves/" + itoa(approvedID), cookie: teacherCookie},
 		{name: "teacher notifications", path: "/t/notifications", cookie: teacherCookie},
+		{name: "teacher export", path: "/t/export", cookie: teacherCookie},
 		{name: "teacher profile", path: "/t/profile", cookie: teacherCookie},
 		{name: "teacher archived leaves", path: "/archived/leaves", cookie: teacherCookie},
 		{name: "teacher archived leave detail", path: "/archived/leaves/" + itoa(archivedLeaveID), cookie: teacherCookie},
@@ -269,6 +270,7 @@ func TestRenderMatrix(t *testing.T) {
 		{name: "counselor recover", path: "/t/recover", cookie: counselorCookie},
 		{name: "counselor leave pending", path: "/t/leaves/" + itoa(pendingID), cookie: counselorCookie},
 		{name: "counselor notifications", path: "/t/notifications", cookie: counselorCookie},
+		{name: "counselor export", path: "/t/export", cookie: counselorCookie},
 		{name: "counselor profile", path: "/t/profile", cookie: counselorCookie},
 		{name: "counselor archived leaves", path: "/archived/leaves", cookie: counselorCookie},
 		{name: "counselor archived leave detail", path: "/archived/leaves/" + itoa(archivedLeaveID), cookie: counselorCookie},
@@ -282,6 +284,7 @@ func TestRenderMatrix(t *testing.T) {
 		{name: "community leave detail", path: "/c/leaves/" + itoa(approvedID), cookie: communityCookie},
 		{name: "community recover", path: "/c/recover", cookie: communityCookie},
 		{name: "community notifications", path: "/c/notifications", cookie: communityCookie},
+		{name: "community export", path: "/c/export", cookie: communityCookie},
 		{name: "community profile", path: "/c/profile", cookie: communityCookie},
 		{name: "community archived leaves", path: "/archived/leaves", cookie: communityCookie},
 		{name: "community archived leave detail", path: "/archived/leaves/" + itoa(archivedLeaveID), cookie: communityCookie},
@@ -290,7 +293,8 @@ func TestRenderMatrix(t *testing.T) {
 		{name: "admin dashboard", path: "/admin", cookie: adminCookie},
 		{name: "admin leaves", path: "/admin/leaves", cookie: adminCookie},
 		{name: "admin leave detail", path: "/admin/leaves/" + itoa(pendingID), cookie: adminCookie},
-		{name: "admin leave export", path: "/admin/leaves/export", cookie: adminCookie, kind: "csv"},
+		{name: "admin export page", path: "/admin/export", cookie: adminCookie},
+		{name: "admin export xlsx", path: "/admin/export.xlsx?range=all", cookie: adminCookie, kind: "xlsx"},
 		{name: "admin report building", path: "/admin/reports?dimension=building", cookie: adminCookie},
 		{name: "admin report class", path: "/admin/reports?dimension=class", cookie: adminCookie},
 		{name: "admin report teacher", path: "/admin/reports?dimension=teacher", cookie: adminCookie},
@@ -375,13 +379,6 @@ func TestRenderMatrix(t *testing.T) {
 				}
 				if len(body) == 0 {
 					t.Errorf("页面 %s 模板内容为空", tc.path)
-				}
-			case "csv":
-				if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/csv") {
-					t.Errorf("页面 %s Content-Type = %q，期望 text/csv", tc.path, ct)
-				}
-				if !strings.HasPrefix(body, "\xEF\xBB\xBF") {
-					t.Errorf("页面 %s 缺少 UTF-8 BOM", tc.path)
 				}
 			default:
 				// Every HTML response, including edge-case error pages, must

@@ -19,7 +19,7 @@ func TestTemplatesCompile(t *testing.T) {
 		"class_claim", "class_counselor", "class_detail", "class_imports",
 		"class_invitations", "class_new", "class_students",
 		"community_buildings", "community_dashboard", "community_leave",
-		"community_leaves", "community_students",
+		"community_leaves", "community_students", "export_leaves",
 		"error", "forgot", "gate", "landing", "login", "notifications",
 		"profile", "proxy", "recover", "recover_status", "register", "reset",
 		"staff_recover", "staff_register",

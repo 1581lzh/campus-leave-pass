@@ -1,7 +1,7 @@
 {{define "content"}}
 <section class="page-head">
   <div><p class="eyebrow">班级详情</p><h1>{{.Class.Name}}</h1><p class="muted">{{.Class.Department}} · {{.Class.StudentCount}} 名学生 · 版本 {{.Class.Version}}</p></div>
-  <div class="head-actions"><a class="btn" href="/t/classes/{{.Class.ID}}/students">学生名单</a><a class="btn" href="/t/classes/{{.Class.ID}}/counselor">辅导员设置</a><a class="btn" href="/t/classes">返回</a></div>
+  <div class="head-actions"><a class="btn" href="/t/export?class_id={{.Class.ID}}">导出请假</a><a class="btn" href="/t/classes/{{.Class.ID}}/students">学生名单</a><a class="btn" href="/t/classes/{{.Class.ID}}/counselor">辅导员设置</a><a class="btn" href="/t/classes">返回</a></div>
 </section>
 {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
 {{if .Notice}}<div class="alert alert-info">{{.Notice}}</div>{{end}}

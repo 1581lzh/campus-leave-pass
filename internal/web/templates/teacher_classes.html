@@ -2,6 +2,7 @@
 <section class="page-head">
   <div><p class="eyebrow">教职工</p><h1>我的班级</h1><p class="muted">班主任最多负责一个班级；辅导员可接受多个班级邀请。</p></div>
   <div class="head-actions">
+    <a class="btn" href="/t/export">导出请假</a>
     {{if eq .User.Role "teacher"}}<a class="btn" href="/t/classes/claim">认领班级</a><a class="btn btn-primary" href="/t/classes/new">创建班级</a>{{else}}<a class="btn btn-primary" href="/t/class-invitations">班级邀请</a>{{end}}
   </div>
 </section>

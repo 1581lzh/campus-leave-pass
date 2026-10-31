@@ -1,5 +1,5 @@
 {{define "content"}}
-<section class="page-head"><div><p class="eyebrow">管理员</p><h1>请假查询</h1><p class="muted">按提交日期和请假开始日期双范围筛选；共 {{.Total}} 条。CSV 导出遵循当前筛选。</p></div><div class="head-actions"><a class="btn" href="/admin/leaves/export?{{.Query}}">导出 CSV</a><a class="btn" href="/admin/reports">汇总报表</a></div></section>
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>请假查询</h1><p class="muted">按提交日期和请假开始日期双范围筛选；共 {{.Total}} 条。导出 Excel 可另行选择班级、楼栋、专业系、学生与时间范围。</p></div><div class="head-actions"><a class="btn" href="/admin/export">导出 Excel</a><a class="btn" href="/admin/reports">汇总报表</a></div></section>
 <div class="card">
   <form method="get" action="/admin/leaves" class="filters">
     <label class="field"><span>提交日期 起</span><input type="date" name="created_from" value="{{.Filter.CreatedFrom}}"></label>
