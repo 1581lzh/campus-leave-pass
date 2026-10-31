@@ -220,3 +220,21 @@ sqlite3 /opt/leavepass/leavepass.db "VACUUM INTO '/opt/leavepass/backups/leavepa
 - `PLAN.md`：完整设计（角色、数据模型、路由、后台任务、默认值）。
 - `web/tailwind/README.md`：样式构建细节与状态类约定。
 - `deploy/README.md`：部署检查清单。
+
+## 9. 许可证
+
+本项目采用 **双许可（dual licensing）**：
+
+| 使用方式 | 适用许可 |
+| --- | --- |
+| 学习、研究、内部使用、按 AGPL-3.0 开源分发 | [GNU AGPL-3.0](LICENSE) |
+| 闭源分发、闭源 SaaS、嵌入专有产品 | [商业许可](LICENSE-COMMERCIAL.md) |
+
+Copyright (C) 2026 1581lzh
+
+- 开源许可：[LICENSE](LICENSE)（AGPL-3.0 全文）。
+- 商业许可说明与联系方式：[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)，邮箱 **lolpk4134@qq.com**。
+- 贡献授权（双许可所需）：[CONTRIBUTING.md](CONTRIBUTING.md)。
+- 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
+
+简单说：**能遵守 AGPL-3.0 就可以免费使用；不能遵守（例如要做闭源产品）就需要商业许可。** 如果你把修改后的版本作为网络服务提供给用户，AGPL-3.0 要求你向这些用户提供对应的完整源码。
