@@ -235,6 +235,7 @@ Copyright (C) 2026 1581lzh
 - 开源许可：[LICENSE](LICENSE)（AGPL-3.0 全文）。
 - 商业许可说明与联系方式：[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)，邮箱 **lolpk4134@qq.com**。
 - 贡献授权（双许可所需）：[CONTRIBUTING.md](CONTRIBUTING.md)。
+- 第三方组件与许可证：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 - 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 简单说：**能遵守 AGPL-3.0 就可以免费使用；不能遵守（例如要做闭源产品）就需要商业许可。** 如果你把修改后的版本作为网络服务提供给用户，AGPL-3.0 要求你向这些用户提供对应的完整源码。
