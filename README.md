@@ -90,7 +90,7 @@ campus-leave-pass/
 
 ### 3.1 环境
 
-- Go **1.26**（`go.mod` 要求 1.26.7）
+- Go **1.26**（`go.mod` 要求 1.26.10）
 - Node.js **24+** / npm 11+（仅用于编译 Tailwind CSS）
 
 ### 3.2 构建样式

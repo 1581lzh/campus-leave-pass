@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "2026-10-30T00:31:35Z",
-  "updated_at": "2026-10-31T17:18:53Z",
+  "updated_at": "2026-11-01T05:58:19Z",
   "files": {
     ".env.example": {
       "role": "index",
@@ -59,9 +59,9 @@
     },
     "README.md": {
       "role": "index",
-      "sha256": "78913f1a23da61ffe4fb1286d112ca8eaecfd2013469d9f4e2501e41030aa7ff",
-      "size": 16854,
-      "normalized_sha256": "78913f1a23da61ffe4fb1286d112ca8eaecfd2013469d9f4e2501e41030aa7ff"
+      "sha256": "2495caba4a3ab9ec339648721a3e57ac59ba37bef35da133e46cee122a922e73",
+      "size": 16855,
+      "normalized_sha256": "2495caba4a3ab9ec339648721a3e57ac59ba37bef35da133e46cee122a922e73"
     },
     "SECURITY.md": {
       "role": "index",
@@ -71,15 +71,15 @@
     },
     "THIRD_PARTY_NOTICES.md": {
       "role": "index",
-      "sha256": "5c3a6b8425c35aef627cbf738a3728fd59bbb36b28fc30bbe12e4e60b472dcdf",
-      "size": 18159,
-      "normalized_sha256": "5c3a6b8425c35aef627cbf738a3728fd59bbb36b28fc30bbe12e4e60b472dcdf"
+      "sha256": "4c89a22aacc79dc52c67fa8f080af6e24934a1fffab0f92dd10287eddd014e9d",
+      "size": 18222,
+      "normalized_sha256": "4c89a22aacc79dc52c67fa8f080af6e24934a1fffab0f92dd10287eddd014e9d"
     },
     "aoci.code.txt": {
       "role": "index",
-      "sha256": "527d166f17bde2e4b46c29e4bb1bf901f916e23c434fb7f64241a8cac58b7969",
-      "size": 45945,
-      "normalized_sha256": "527d166f17bde2e4b46c29e4bb1bf901f916e23c434fb7f64241a8cac58b7969"
+      "sha256": "76190b9bca53c6df085c6707756c7ddcf73c791f59f61783583be3f346a41d50",
+      "size": 46409,
+      "normalized_sha256": "76190b9bca53c6df085c6707756c7ddcf73c791f59f61783583be3f346a41d50"
     },
     "aoci.meta.txt": {
       "role": "index",
@@ -121,15 +121,15 @@
     },
     "go.mod": {
       "role": "index",
-      "sha256": "881c71889d8acfaf52b714b3d87eefb33b6662aa738b2671a4718ca368369ff6",
-      "size": 970,
-      "normalized_sha256": "881c71889d8acfaf52b714b3d87eefb33b6662aa738b2671a4718ca368369ff6"
+      "sha256": "72a11ae7faff04ffe4813df887775ea6c9dd139a0ea2e07a1e9dee5c3a6c517e",
+      "size": 1051,
+      "normalized_sha256": "72a11ae7faff04ffe4813df887775ea6c9dd139a0ea2e07a1e9dee5c3a6c517e"
     },
     "go.sum": {
       "role": "index",
-      "sha256": "68c25e49a28ffc60a675651b06006a1dc73f88105c8d857f6599b51ffa747053",
-      "size": 6748,
-      "normalized_sha256": "68c25e49a28ffc60a675651b06006a1dc73f88105c8d857f6599b51ffa747053"
+      "sha256": "4256781c70f13b62ae4df52582ea1e3dba3d7e477617af0d09a9e22cd7dc7f9d",
+      "size": 6868,
+      "normalized_sha256": "4256781c70f13b62ae4df52582ea1e3dba3d7e477617af0d09a9e22cd7dc7f9d"
     },
     "internal/app/admin.go": {
       "role": "index",

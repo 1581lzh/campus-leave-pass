@@ -10,20 +10,20 @@
 
 | 组件 | 版本 | 许可证 |
 | --- | --- | --- |
-| `Go 标准库（随二进制静态链接）` | go1.26 | BSD-3-Clause |
+| `Go 标准库（随二进制静态链接）` | go1.26.10 | BSD-3-Clause |
 | `Tailwind CSS（仅构建期，编译后的 CSS 保留其许可头）` | 4.3.3 | MIT |
 | `github.com/dustin/go-humanize` | v1.1.0 | MIT |
 | `github.com/google/uuid` | v1.6.0 | BSD-3-Clause |
 | `github.com/remyoudompheng/bigfft` | v0.0.0-20230129092748-24d4a6f8daec | BSD-3-Clause |
-| `github.com/richardlehane/mscfb` | v1.0.7 | Apache-2.0 |
+| `github.com/richardlehane/mscfb` | v1.0.9 | Apache-2.0 |
 | `github.com/richardlehane/msoleps` | v1.0.6 | Apache-2.0 |
 | `github.com/skip2/go-qrcode` | v0.0.0-20200617195104-da1b6568686e | MIT |
 | `github.com/tiendc/go-deepcopy` | v1.7.2 | MIT |
-| `github.com/xuri/efp` | v0.0.1 | BSD-3-Clause |
-| `github.com/xuri/excelize/v2` | v2.11.0 | BSD-3-Clause |
+| `github.com/xuri/efp` | v0.0.3-0.20260924042702-217b81952dec | BSD-3-Clause |
+| `github.com/xuri/excelize/v2` | v2.11.1-0.20261029001137-c5fd73bde8f6 | BSD-3-Clause |
 | `github.com/xuri/nfp` | v0.0.2-0.20250530014748-2ddeb826f9a9 | BSD-3-Clause |
 | `golang.org/x/crypto` | v0.58.0 | BSD-3-Clause |
-| `golang.org/x/net` | v0.60.0 | BSD-3-Clause |
+| `golang.org/x/net` | v0.62.0 | BSD-3-Clause |
 | `golang.org/x/sys` | v0.49.0 | BSD-3-Clause |
 | `golang.org/x/text` | v0.43.0 | BSD-3-Clause |
 | `modernc.org/libc` | v1.79.0 | BSD-3-Clause |
