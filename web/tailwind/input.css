@@ -1203,6 +1203,13 @@
     margin-top: 0.85rem;
   }
 
+  /* Keep a gap between a tab/action row and the content that follows it
+     (for example report dimension tabs and the stats grid). When the action
+     row closes a card or form, the card/form padding already provides it. */
+  .actions:not(:last-child) {
+    margin-bottom: 0.85rem;
+  }
+
   .actions > form {
     margin: 0;
   }

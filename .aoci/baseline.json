@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "2026-10-30T00:31:35Z",
-  "updated_at": "2026-11-01T07:01:48Z",
+  "updated_at": "2026-11-01T07:06:02Z",
   "files": {
     ".env.example": {
       "role": "index",
@@ -77,9 +77,9 @@
     },
     "aoci.code.txt": {
       "role": "index",
-      "sha256": "6dcb10658c36e6aa77da8c12d9fd05c14b3a757af1f56684f373960f429b34d0",
-      "size": 47589,
-      "normalized_sha256": "6dcb10658c36e6aa77da8c12d9fd05c14b3a757af1f56684f373960f429b34d0"
+      "sha256": "8dff272910059b1ff28a6a0e4d0f4d1062544f60215b4ba0861a27b8e3b69549",
+      "size": 47709,
+      "normalized_sha256": "8dff272910059b1ff28a6a0e4d0f4d1062544f60215b4ba0861a27b8e3b69549"
     },
     "aoci.meta.txt": {
       "role": "index",
@@ -477,9 +477,9 @@
     },
     "internal/web/static/app.css": {
       "role": "index",
-      "sha256": "7748184b08e34a8f9d1f5b6a791fc74528281acbb88e7e4ad540fb38b2bbcb75",
-      "size": 37400,
-      "normalized_sha256": "7748184b08e34a8f9d1f5b6a791fc74528281acbb88e7e4ad540fb38b2bbcb75"
+      "sha256": "f8963b312248ed25ef10d28483c6f54ce4068d3ce3ebb929cc6f208b28f99abd",
+      "size": 37447,
+      "normalized_sha256": "f8963b312248ed25ef10d28483c6f54ce4068d3ce3ebb929cc6f208b28f99abd"
     },
     "internal/web/static/app.js": {
       "role": "index",
@@ -877,9 +877,9 @@
     },
     "web/tailwind/input.css": {
       "role": "index",
-      "sha256": "e8daa766bf53ce54b44526260e3d988f94abae4cae8d53f804cdd1c4b08db6b3",
-      "size": 42925,
-      "normalized_sha256": "e8daa766bf53ce54b44526260e3d988f94abae4cae8d53f804cdd1c4b08db6b3"
+      "sha256": "3b8a2187c8d274fa46713536943c25a8072a97f65c21f983fdd0fae36d26d6df",
+      "size": 43216,
+      "normalized_sha256": "3b8a2187c8d274fa46713536943c25a8072a97f65c21f983fdd0fae36d26d6df"
     },
     "web/tailwind/package.json": {
       "role": "index",
