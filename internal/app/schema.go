@@ -368,12 +368,19 @@ CREATE TABLE admin_audit_logs (
     action TEXT NOT NULL,
     target_type TEXT NOT NULL DEFAULT '',
     target_id INTEGER,
+    target_class_id INTEGER,
+    target_class_name TEXT NOT NULL DEFAULT '',
+    target_department TEXT NOT NULL DEFAULT '',
+    target_building TEXT NOT NULL DEFAULT '',
     detail TEXT NOT NULL DEFAULT '',
     ip TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL
 );
 CREATE INDEX idx_audit_actor ON admin_audit_logs(actor_user_id, created_at);
 CREATE INDEX idx_audit_target ON admin_audit_logs(target_type, target_id);
+CREATE INDEX idx_audit_target_class ON admin_audit_logs(target_class_id);
+CREATE INDEX idx_audit_target_department ON admin_audit_logs(target_department);
+CREATE INDEX idx_audit_target_building ON admin_audit_logs(target_building);
 `
 
 func (s *Store) migrate() error {
@@ -381,7 +388,7 @@ func (s *Store) migrate() error {
 	if err := s.DB.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
 		return err
 	}
-	if v >= 3 {
+	if v >= 4 {
 		return nil
 	}
 	tx, err := s.DB.Begin()
@@ -400,11 +407,34 @@ func (s *Store) migrate() error {
 			return err
 		}
 	}
-	// v3 adds an index for the TTL cleanup of rate-limit rows created above.
-	if _, err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_login_attempts_updated ON login_attempts(updated_at)`); err != nil {
-		return err
+	if v > 0 {
+		// Keep the v3 index migration for the TTL cleanup of rate-limit rows.
+		if _, err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_login_attempts_updated ON login_attempts(updated_at)`); err != nil {
+			return err
+		}
+		// v4 snapshots the class context of audited targets so historical
+		// filters keep working after classes are renamed or deleted.
+		for _, stmt := range []string{
+			`ALTER TABLE admin_audit_logs ADD COLUMN target_class_id INTEGER`,
+			`ALTER TABLE admin_audit_logs ADD COLUMN target_class_name TEXT NOT NULL DEFAULT ''`,
+			`ALTER TABLE admin_audit_logs ADD COLUMN target_department TEXT NOT NULL DEFAULT ''`,
+			`ALTER TABLE admin_audit_logs ADD COLUMN target_building TEXT NOT NULL DEFAULT ''`,
+		} {
+			if _, err := tx.Exec(stmt); err != nil {
+				return err
+			}
+		}
 	}
-	if _, err := tx.Exec(`PRAGMA user_version = 3`); err != nil {
+	for _, stmt := range []string{
+		`CREATE INDEX IF NOT EXISTS idx_audit_target_class ON admin_audit_logs(target_class_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_target_department ON admin_audit_logs(target_department)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_target_building ON admin_audit_logs(target_building)`,
+	} {
+		if _, err := tx.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(`PRAGMA user_version = 4`); err != nil {
 		return err
 	}
 	return tx.Commit()

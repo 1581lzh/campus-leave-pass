@@ -1,0 +1,29 @@
+{{define "filter_bar"}}
+{{$bar := .Normalized}}
+<form method="{{$bar.Method}}" action="{{$bar.Action}}" class="filters">
+  {{range $bar.Hidden}}
+  <input type="hidden" name="{{.Name}}" value="{{.Value}}">
+  {{end}}
+  {{range $bar.Fields}}
+  <label class="field{{if eq .Span 2}} span-2{{end}}">
+    <span>{{.Label}}</span>
+    {{if eq .Kind "select"}}
+    <select name="{{.Name}}">
+      {{range .Options}}
+      <option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>
+      {{end}}
+    </select>
+    {{else if eq .Kind "date"}}
+    <input type="date" name="{{.Name}}" value="{{.Value}}">
+    {{else}}
+    <input type="text" name="{{.Name}}" value="{{.Value}}"{{if .Placeholder}} placeholder="{{.Placeholder}}"{{end}}{{if .MaxLength}} maxlength="{{.MaxLength}}"{{end}}{{if .InputMode}} inputmode="{{.InputMode}}"{{end}}>
+    {{end}}
+    {{if .Help}}<small>{{.Help}}</small>{{end}}
+  </label>
+  {{end}}
+  <div class="filter-actions">
+    <button class="btn btn-primary" type="submit">{{$bar.SubmitLabel}}</button>
+    {{if $bar.ResetURL}}<a class="btn" href="{{$bar.ResetURL}}">重置</a>{{end}}
+  </div>
+</form>
+{{end}}

@@ -154,7 +154,12 @@ type lockedRow struct {
 
 type adminAuditData struct {
 	baseData
-	Logs []app.AuditLog
+	Logs      []app.AuditLog
+	Total     int
+	PageNo    int
+	Pages     int
+	Query     string
+	FilterBar FilterBar
 }
 
 func pagesOf(total, size int) int {
@@ -911,7 +916,25 @@ func (s *Server) adminAudit(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.require(w, r, "admin"); !ok {
 		return
 	}
-	logs, _ := s.store.ListAuditLogs(r.Context(), 300)
+	f, rangeValue, from, to, err := s.auditFilterFromQuery(r)
+	if err != nil {
+		s.error(w, r, http.StatusUnprocessableEntity, "筛选条件有误", err.Error()+"；请检查后重试。")
+		return
+	}
+	logs, total, err := s.store.SearchAuditLogs(r.Context(), f)
+	if err != nil {
+		s.error(w, r, http.StatusUnprocessableEntity, "查询审计日志失败", "请检查筛选条件后重试。")
+		return
+	}
+	facets, _ := s.store.AuditFacets(r.Context())
 	b := s.base(w, r, "admin_audit", "审计日志")
-	s.renderPage(w, r, "admin_audit", adminAuditData{baseData: b, Logs: logs})
+	s.renderPage(w, r, "admin_audit", adminAuditData{
+		baseData:  b,
+		Logs:      logs,
+		Total:     total,
+		PageNo:    f.Page,
+		Pages:     pagesOf(total, f.PageSize),
+		Query:     r.URL.RawQuery,
+		FilterBar: buildAuditFilterBar(f, facets, rangeValue, from, to),
+	})
 }

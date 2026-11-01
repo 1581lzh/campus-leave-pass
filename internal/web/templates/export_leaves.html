@@ -80,7 +80,7 @@
     </label>
     <label class="field"><span>自定义开始</span><input type="date" name="from" value="{{.From}}"><small>仅“自定义范围”时生效</small></label>
     <label class="field"><span>自定义结束</span><input type="date" name="to" value="{{.To}}"><small>仅“自定义范围”时生效</small></label>
-    <label class="field grow"><span>学生</span><input name="student" value="{{.Student}}" maxlength="32" placeholder="完整学号或完整姓名，留空导出范围内全部"><small>指定学生时支持任意时间范围；填写“全部时间”可导出该生所有记录</small></label>
+    <label class="field grow"><span>学生</span><input name="student" value="{{.Student}}" maxlength="32" placeholder="完整学号或姓名"><small>指定学生时支持任意时间范围；填写“全部时间”可导出该生所有记录</small></label>
     <div class="filter-actions"><button class="btn btn-primary" type="submit">导出 Excel</button></div>
   </form>
 </div>

@@ -406,17 +406,15 @@ func (s *Store) ListAuditLogs(ctx context.Context, limit int) ([]AuditLog, error
 	if limit <= 0 {
 		limit = 100
 	}
-	rows, err := s.DB.QueryContext(ctx, `SELECT id, COALESCE(actor_user_id,0), actor_name, action, target_type,
-		COALESCE(target_id,0), detail, ip, created_at FROM admin_audit_logs ORDER BY created_at DESC LIMIT ?`, limit)
+	rows, err := s.DB.QueryContext(ctx, `SELECT `+auditCols+` FROM admin_audit_logs ORDER BY created_at DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	var out []AuditLog
 	for rows.Next() {
-		var a AuditLog
-		if err := rows.Scan(&a.ID, &a.ActorUserID, &a.ActorName, &a.Action, &a.TargetType, &a.TargetID,
-			&a.Detail, &a.IP, &a.CreatedAt); err != nil {
+		a, err := scanAuditLog(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, a)

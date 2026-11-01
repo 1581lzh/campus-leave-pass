@@ -81,7 +81,9 @@ func (s *Store) NotifyClassStudents(ctx context.Context, q queryer, classID int6
 	return nil
 }
 
-// Audit writes one administrator action record.
+// Audit writes one administrator action record. The target class context is
+// snapshotted best-effort so audit filters remain usable after renames or
+// deletions; a failed lookup never blocks the audit write itself.
 func (s *Store) Audit(ctx context.Context, q queryer, actor User, action, targetType string, targetID int64, detail, ip string) error {
 	if q == nil {
 		q = s.DB
@@ -90,9 +92,61 @@ func (s *Store) Audit(ctx context.Context, q queryer, actor User, action, target
 	if targetID > 0 {
 		tid = targetID
 	}
-	_, err := q.ExecContext(ctx, `INSERT INTO admin_audit_logs (actor_user_id,actor_name,action,target_type,target_id,detail,ip,created_at)
-		VALUES (?,?,?,?,?,?,?,?)`, nullInt(actor.ID), actor.Username, action, targetType, tid, detail, ip, s.NowUnix())
+	classID, className, department, building := auditTargetSnapshot(ctx, q, targetType, targetID)
+	_, err := q.ExecContext(ctx, `INSERT INTO admin_audit_logs
+		(actor_user_id,actor_name,action,target_type,target_id,target_class_id,target_class_name,
+		 target_department,target_building,detail,ip,created_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+		nullInt(actor.ID), actor.Username, action, targetType, tid, classID, className,
+		department, building, detail, ip, s.NowUnix())
 	return err
+}
+
+// auditTargetSnapshot resolves the target's class context. Missing rows and
+// lookup errors both degrade to an empty snapshot.
+func auditTargetSnapshot(ctx context.Context, q queryer, targetType string, targetID int64) (classID any, className, department, building string) {
+	if targetID <= 0 {
+		return nil, "", "", ""
+	}
+	switch targetType {
+	case "class":
+		var id int64
+		var name, dept string
+		if err := q.QueryRowContext(ctx, `SELECT id,name,department FROM classes WHERE id=?`, targetID).
+			Scan(&id, &name, &dept); err == nil {
+			return id, name, dept, ""
+		}
+	case "student":
+		if id, name, dept, dorm, ok := studentClassSnapshot(ctx, q, targetID); ok {
+			return id, name, dept, dorm
+		}
+	case "user":
+		// Students carry a dorm building; staff resolve through the class they
+		// lead or counsel.
+		if id, name, dept, dorm, ok := studentClassSnapshot(ctx, q, targetID); ok {
+			return id, name, dept, dorm
+		}
+		var id int64
+		var name, dept string
+		if err := q.QueryRowContext(ctx, `SELECT id,name,department FROM classes
+			WHERE teacher_user_id=? OR counselor_user_id=? ORDER BY id LIMIT 1`, targetID, targetID).
+			Scan(&id, &name, &dept); err == nil {
+			return id, name, dept, ""
+		}
+	}
+	return nil, "", "", ""
+}
+
+func studentClassSnapshot(ctx context.Context, q queryer, userID int64) (classID any, className, department, building string, ok bool) {
+	var id int64
+	var name, dept, dorm string
+	err := q.QueryRowContext(ctx, `SELECT c.id,c.name,c.department,sc.dorm_building
+		FROM student_classes sc JOIN classes c ON c.id=sc.class_id WHERE sc.user_id=?`, userID).
+		Scan(&id, &name, &dept, &dorm)
+	if err != nil {
+		return nil, "", "", "", false
+	}
+	return id, name, dept, dorm, true
 }
 
 func nullInt(v int64) any {

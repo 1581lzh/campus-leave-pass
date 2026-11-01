@@ -412,15 +412,19 @@ type ImportBatch struct {
 
 // AuditLog is an admin action record.
 type AuditLog struct {
-	ID          int64
-	ActorUserID int64
-	ActorName   string
-	Action      string
-	TargetType  string
-	TargetID    int64
-	Detail      string
-	IP          string
-	CreatedAt   int64
+	ID               int64
+	ActorUserID      int64
+	ActorName        string
+	Action           string
+	TargetType       string
+	TargetID         int64
+	TargetClassID    int64
+	TargetClassName  string
+	TargetDepartment string
+	TargetBuilding   string
+	Detail           string
+	IP               string
+	CreatedAt        int64
 }
 
 // StudentClass is a student's class relation.

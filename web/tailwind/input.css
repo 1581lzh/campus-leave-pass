@@ -995,6 +995,15 @@
     align-items: start;
   }
 
+  /* Wide fields get more room on desktop while narrow screens keep one
+     column per field. */
+  @media (min-width: 40rem) {
+    .filters .span-2,
+    .filters > .grow {
+      grid-column: span 2;
+    }
+  }
+
   .filter-actions {
     @apply flex flex-wrap items-center justify-end gap-2;
     grid-column: 1 / -1;

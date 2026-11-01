@@ -790,11 +790,16 @@ func (s *Store) DisbandClass(ctx context.Context, admin User, classID int64, ip 
 		if _, err := tx.ExecContext(ctx, `UPDATE student_import_batches SET class_id=NULL WHERE class_id=?`, classID); err != nil {
 			return err
 		}
+		// Audit while the class row still exists so the target snapshot is
+		// populated; both writes share this transaction.
+		if err := s.Audit(ctx, tx, admin, "class.disband", "class", classID,
+			fmt.Sprintf("解散班级 %s，取消待审批假条 %d 条，学生 %d 人转为暂无班级", c.Name, cancelled, c.StudentCount), ip); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM classes WHERE id=?`, classID); err != nil {
 			return err
 		}
-		return s.Audit(ctx, tx, admin, "class.disband", "class", classID,
-			fmt.Sprintf("解散班级 %s，取消待审批假条 %d 条，学生 %d 人转为暂无班级", c.Name, cancelled, c.StudentCount), ip)
+		return nil
 	})
 }
 

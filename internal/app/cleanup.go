@@ -145,11 +145,12 @@ func (s *Store) CleanupClass(ctx context.Context, classID int64) error {
 		if _, err := tx.ExecContext(ctx, `UPDATE leave_requests SET class_id=NULL WHERE class_id=?`, classID); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM classes WHERE id=?`, classID); err != nil {
-			return err
-		}
+		// Audit before the class row disappears so the snapshot lookup sees it.
 		if err := s.Audit(ctx, tx, User{Username: "系统"}, "class.cleanup", "class", classID,
 			fmt.Sprintf("待认领满 7 天清理班级 %s：学生 %d 人，假条 %d 条，保留至 %s", c.Name, studentCount, leaveCount, cstDate(now+ArchiveRetainTTL)), ""); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM classes WHERE id=?`, classID); err != nil {
 			return err
 		}
 		return s.NotifyAdmins(ctx, tx, "class_cleaned", "班级已清理",
