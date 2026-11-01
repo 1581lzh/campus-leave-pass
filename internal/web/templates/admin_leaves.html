@@ -1,6 +1,8 @@
 {{define "content"}}
 <section class="page-head"><div><p class="eyebrow">管理员</p><h1>请假查询</h1><p class="muted">按提交日期和请假开始日期双范围筛选；共 {{.Total}} 条。导出 Excel 可另行选择班级、楼栋、专业系、学生与时间范围。</p></div><div class="head-actions"><a class="btn" href="/admin/export">导出 Excel</a><a class="btn" href="/admin/reports">汇总报表</a></div></section>
-<div class="card">
+<details class="filter-panel">
+  <summary class="btn filter-toggle">筛选条件</summary>
+  <div class="card filter-panel-body">
   <form method="get" action="/admin/leaves" class="filters">
     <label class="field"><span>提交日期 起</span><input type="date" name="created_from" value="{{.Filter.CreatedFrom}}"></label>
     <label class="field"><span>提交日期 止</span><input type="date" name="created_to" value="{{.Filter.CreatedTo}}"></label>
@@ -14,7 +16,8 @@
     <label class="field"><span>关键词</span><input name="q" value="{{.Filter.Keyword}}" placeholder="姓名/学号/电话"></label>
     <div class="filter-actions"><button class="btn btn-primary" type="submit">筛选</button><a class="btn" href="/admin/leaves">清除</a></div>
   </form>
-</div>
+  </div>
+</details>
 <div class="card table-card">
 {{if .Leaves}}
 <table><thead><tr><th>学生</th><th>班级 / 宿舍</th><th>班主任 / 辅导员</th><th>请假时间</th><th>状态</th><th>提交时间</th><th></th></tr></thead><tbody>

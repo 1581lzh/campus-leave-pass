@@ -1,6 +1,8 @@
 {{define "content"}}
 <section class="page-head"><div><p class="eyebrow">保留假条</p><h1>已清理班级的假条</h1><p class="muted">仅展示已清理班级的保留假条，只读，到期自动删除。社区老师只看负责楼栋的已批准/已结束假条。</p></div></section>
-<div class="card">
+<details class="filter-panel">
+  <summary class="btn filter-toggle">筛选条件</summary>
+  <div class="card filter-panel-body">
   <form method="get" action="/archived/leaves" class="filters">
     <label class="field"><span>清理日期 起</span><input type="date" name="cleaned_from" value="{{.Filter.CleanedFrom}}"></label>
     <label class="field"><span>清理日期 止</span><input type="date" name="cleaned_to" value="{{.Filter.CleanedTo}}"></label>
@@ -14,7 +16,8 @@
     <label class="field"><span>关键词</span><input name="q" value="{{.Filter.Keyword}}" placeholder="姓名/学号"></label>
     <div class="filter-actions"><button class="btn btn-primary" type="submit">筛选</button><a class="btn" href="/archived/leaves">清除</a></div>
   </form>
-</div>
+  </div>
+</details>
 <div class="card table-card">
   <div class="card-head"><h2>保留假条</h2><span class="badge">{{.Total}} 条</span></div>
   {{if .Leaves}}

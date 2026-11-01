@@ -13,7 +13,9 @@
 {{else if .IsAdmin}}
 <div class="alert alert-info">“导出范围”四选一：全部记录、指定班级、指定楼栋或整个专业系；下方对应选择框只在该范围下生效。</div>
 {{end}}
-<div class="card">
+<details class="filter-panel">
+  <summary class="btn filter-toggle">筛选条件</summary>
+  <div class="card filter-panel-body">
   <form method="get" action="{{.Action}}" class="filters">
     {{if .IsAdmin}}
     <label class="field"><span>导出范围</span>
@@ -83,7 +85,8 @@
     <label class="field grow"><span>学生</span><input name="student" value="{{.Student}}" maxlength="32" placeholder="完整学号或姓名"><small>指定学生时支持任意时间范围；填写“全部时间”可导出该生所有记录</small></label>
     <div class="filter-actions"><button class="btn btn-primary" type="submit">导出 Excel</button></div>
   </form>
-</div>
+  </div>
+</details>
 <div class="card">
   <h2>导出说明</h2>
   <ul class="list">
