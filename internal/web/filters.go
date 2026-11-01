@@ -37,6 +37,13 @@ type FilterBar struct {
 	ResetURL    string
 	Fields      []FilterField
 	Hidden      []FilterHidden
+
+	// Collapsible renders the form inside a native <details> panel. The
+	// summary is a normal button, so the panel also works without JavaScript.
+	Collapsible  bool
+	Open         bool
+	SummaryLabel string // defaults to 筛选
+	ActiveCount  int    // number of filters currently applied
 }
 
 // Normalized returns a copy with the template defaults applied. The partial
@@ -49,6 +56,10 @@ func (b FilterBar) Normalized() FilterBar {
 	b.SubmitLabel = strings.TrimSpace(b.SubmitLabel)
 	if b.SubmitLabel == "" {
 		b.SubmitLabel = "筛选"
+	}
+	b.SummaryLabel = strings.TrimSpace(b.SummaryLabel)
+	if b.SummaryLabel == "" {
+		b.SummaryLabel = "筛选"
 	}
 	return b
 }
@@ -117,4 +128,13 @@ func (f FilterField) WithMaxLength(n int) FilterField {
 func (f FilterField) WithInputMode(mode string) FilterField {
 	f.InputMode = mode
 	return f
+}
+
+// WithCollapsible renders the filter bar inside a collapsed details panel.
+// activeCount is shown in the summary so users can see that filters are set
+// even while the panel is closed.
+func (b FilterBar) WithCollapsible(activeCount int) FilterBar {
+	b.Collapsible = true
+	b.ActiveCount = activeCount
+	return b
 }

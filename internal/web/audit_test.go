@@ -78,7 +78,7 @@ func TestAdminAuditFilters(t *testing.T) {
 	if code != http.StatusOK {
 		t.Fatalf("GET action filter: status %d", code)
 	}
-	mustContain(body, "解除 IP 限制 10.0.0.2")
+	mustContain(body, "解除 IP 限制 10.0.0.2", "筛选条件（已启用 1 项）")
 	mustNotContain(body, "修正学号 20261001")
 
 	code, body = get("?q=" + url.QueryEscape("10.0.0.2"))

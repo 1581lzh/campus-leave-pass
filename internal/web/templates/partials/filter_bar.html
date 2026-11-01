@@ -1,5 +1,10 @@
 {{define "filter_bar"}}
 {{$bar := .Normalized}}
+{{if $bar.Collapsible}}
+<details class="filter-panel"{{if $bar.Open}} open{{end}}>
+  <summary class="btn filter-toggle">{{$bar.SummaryLabel}}{{if gt $bar.ActiveCount 0}}（已启用 {{$bar.ActiveCount}} 项）{{end}}</summary>
+  <div class="card filter-panel-body">
+{{end}}
 <form method="{{$bar.Method}}" action="{{$bar.Action}}" class="filters">
   {{range $bar.Hidden}}
   <input type="hidden" name="{{.Name}}" value="{{.Value}}">
@@ -26,4 +31,8 @@
     {{if $bar.ResetURL}}<a class="btn" href="{{$bar.ResetURL}}">重置</a>{{end}}
   </div>
 </form>
+{{if $bar.Collapsible}}
+  </div>
+</details>
+{{end}}
 {{end}}

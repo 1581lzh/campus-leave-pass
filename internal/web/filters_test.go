@@ -155,3 +155,37 @@ func TestFilterBarAttributesHiddenOrderAndReset(t *testing.T) {
 		t.Fatalf("hidden inputs should render before fields:\n%s", out)
 	}
 }
+
+func TestFilterBarCollapsible(t *testing.T) {
+	out := renderFilterBarMarkup(t, NewFilterBar("/admin/audit",
+		TextFilter("q", "关键词", "alpha", ""),
+	).WithCollapsible(3))
+
+	for _, want := range []string{
+		`<details class="filter-panel">`,
+		`<summary class="btn filter-toggle">筛选（已启用 3 项）</summary>`,
+		`<div class="card filter-panel-body">`,
+		`<form method="get" action="/admin/audit" class="filters">`,
+		`</details>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("collapsible markup missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, `<details class="filter-panel" open>`) {
+		t.Fatalf("collapsible panel should be closed by default:\n%s", out)
+	}
+
+	open := renderFilterBarMarkup(t, FilterBar{
+		Action:       "/admin/audit",
+		Collapsible:  true,
+		Open:         true,
+		SummaryLabel: "筛选条件",
+	})
+	if !strings.Contains(open, `<details class="filter-panel" open>`) {
+		t.Fatalf("open panel missing open attribute:\n%s", open)
+	}
+	if !strings.Contains(open, `<summary class="btn filter-toggle">筛选条件</summary>`) {
+		t.Fatalf("custom summary label missing:\n%s", open)
+	}
+}

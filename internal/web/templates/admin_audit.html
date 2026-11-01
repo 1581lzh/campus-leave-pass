@@ -1,8 +1,6 @@
 {{define "content"}}
-<section class="page-head"><div><p class="eyebrow">管理员</p><h1>审计日志</h1><p class="muted">仅记录管理员操作；默认显示最近 6 个月，可按操作者、对象用户、动作、班级、专业系、楼栋和时间筛选。物理删除假条按 PLAN 不写审计，因此这里不会出现删除记录。</p></div><div class="head-actions"><a class="btn" href="/admin">返回概览</a></div></section>
-<div class="card">
-  {{template "filter_bar" .FilterBar}}
-</div>
+<section class="page-head"><div><p class="eyebrow">管理员</p><h1>审计日志</h1><p class="muted">仅记录管理员操作；可按操作者、对象、动作、班级、专业系、楼栋和时间筛选；物理删除假条不写审计。</p></div><div class="head-actions"><a class="btn" href="/admin">返回概览</a></div></section>
+{{template "filter_bar" .FilterBar}}
 <div class="card table-card">
   <div class="card-head"><h2>最近操作</h2><span class="badge">{{.Total}}</span></div>
   {{if .Logs}}

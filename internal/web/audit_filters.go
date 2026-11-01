@@ -213,5 +213,22 @@ func buildAuditFilterBar(f app.AuditFilter, facets app.AuditFacets, rangeValue, 
 			WithSpan(2),
 	)
 	bar.ResetURL = "/admin/audit"
-	return bar
+	bar.SummaryLabel = "筛选条件"
+	return bar.WithCollapsible(auditActiveFilterCount(f, rangeValue))
+}
+
+func auditActiveFilterCount(f app.AuditFilter, rangeValue string) int {
+	n := 0
+	for _, v := range []string{f.Actor, f.Target, f.Action, f.TargetType, f.Department, f.Building, f.Keyword} {
+		if strings.TrimSpace(v) != "" {
+			n++
+		}
+	}
+	if f.ClassID > 0 {
+		n++
+	}
+	if rangeValue != "" && rangeValue != "6m" {
+		n++
+	}
+	return n
 }
