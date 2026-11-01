@@ -558,6 +558,27 @@
     });
   }
 
+  /* ------------------------------------------------------------------
+   * Collapsible filter panels
+   * The native details element still works without JavaScript; this only
+   * replaces the instant toggle with a height/opacity transition.
+   * ---------------------------------------------------------------- */
+  function setupFilterPanels() {
+    document.addEventListener("click", function (event) {
+      var summary = closest(event.target, ".filter-panel > summary");
+      if (!summary) return;
+      var panel = summary.parentNode;
+      if (!panel || panel.tagName !== "DETAILS") return;
+      if (
+        window.LPLayout &&
+        typeof window.LPLayout.togglePanel === "function" &&
+        window.LPLayout.togglePanel(panel)
+      ) {
+        event.preventDefault();
+      }
+    });
+  }
+
   ready(function () {
     setupNavigation();
     setupFlashDismiss();
@@ -567,5 +588,6 @@
     setupCopyButtons();
     setupUtilityButtons();
     setupKindForms();
+    setupFilterPanels();
   });
 })();

@@ -358,6 +358,109 @@
     );
   }
 
+  /* ---- Disclosure panels (native <details>) ------------------------- */
+  var panelStates = typeof WeakMap === "function" ? new WeakMap() : null;
+
+  function trackPanel(details, body, animation, saved, closeAtEnd, duration) {
+    var state = {
+      done: false,
+      animation: animation,
+      body: body,
+      saved: saved,
+      closeAtEnd: closeAtEnd
+    };
+    state.finish = function () {
+      if (state.done) return;
+      state.done = true;
+      if (closeAtEnd) details.open = false;
+      try {
+        animation.cancel();
+      } catch (err) {
+        /* no-op */
+      }
+      restoreStyles(body, saved);
+      if (panelStates && panelStates.get(details) === state) {
+        panelStates.delete(details);
+      }
+    };
+    animation.onfinish = state.finish;
+    animation.oncancel = state.finish;
+    window.setTimeout(state.finish, duration + 200);
+    if (panelStates) panelStates.set(details, state);
+  }
+
+  /* Animate a native <details> panel. Returns false when the browser should
+     use its normal instant disclosure behavior. */
+  function togglePanel(details) {
+    if (!canAnimate() || !panelStates || !details) return false;
+    var body = details.querySelector(".filter-panel-body");
+    if (!body) return false;
+
+    var running = panelStates.get(details);
+    if (running) running.finish();
+
+    var saved = saveStyles(body, ["height", "overflow", "opacity", "marginTop"]);
+    var opening = !details.open;
+    if (opening) details.open = true;
+
+    var naturalHeight = body.offsetHeight;
+    if (!naturalHeight) return true;
+
+    var naturalMargin = parseFloat(getComputedStyle(body).marginTop) || 0;
+    var duration = opening ? 260 : 200;
+    var frames;
+    if (opening) {
+      body.style.overflow = "hidden";
+      body.style.height = "0px";
+      body.style.opacity = "0";
+      body.style.marginTop = "0px";
+      void body.offsetHeight;
+      frames = [
+        { height: "0px", opacity: "0", marginTop: "0px" },
+        {
+          height: naturalHeight + "px",
+          opacity: "1",
+          marginTop: naturalMargin + "px"
+        }
+      ];
+    } else {
+      var startHeight = body.offsetHeight;
+      var startMargin = parseFloat(getComputedStyle(body).marginTop) || 0;
+      if (!startHeight) {
+        details.open = false;
+        restoreStyles(body, saved);
+        return true;
+      }
+      body.style.overflow = "hidden";
+      body.style.height = startHeight + "px";
+      body.style.marginTop = startMargin + "px";
+      void body.offsetHeight;
+      frames = [
+        {
+          height: startHeight + "px",
+          opacity: "1",
+          marginTop: startMargin + "px"
+        },
+        { height: "0px", opacity: "0", marginTop: "0px" }
+      ];
+    }
+
+    var animation;
+    try {
+      animation = body.animate(frames, {
+        duration: duration,
+        easing: opening ? EASE_OUT : EASE_IN,
+        fill: "both"
+      });
+    } catch (err) {
+      if (!opening) details.open = false;
+      restoreStyles(body, saved);
+      return true;
+    }
+    trackPanel(details, body, animation, saved, !opening, duration);
+    return true;
+  }
+
   /* Animate a container from its current height to the height produced by
      `mutate()`. Elements that the mutation reveals (selector `enter`) fade in
      at the same time, so a form field swap reads as one movement. */
@@ -448,6 +551,7 @@
     expand: expand,
     collapse: collapse,
     morph: morph,
-    reset: reset
+    reset: reset,
+    togglePanel: togglePanel
   };
 })();
