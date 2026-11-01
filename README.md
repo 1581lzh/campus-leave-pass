@@ -79,7 +79,7 @@ campus-leave-pass/
   internal/validate/      用户名/手机号/学号/宿舍等校验
   internal/web/           HTTP 路由、handler、中间件、模板与静态资源
     templates/            html/template 页面
-    static/               app.css（构建产物，需入库）、app.js（交互）、motion.js（动效）
+    static/               app.css（构建产物，需入库）、app.js（交互）、motion.js（动效）、layout.js（布局过渡）
   web/tailwind/           Tailwind 构建管线（input.css、package.json）
   deploy/                 systemd 与 nginx 样例、部署检查清单
   PLAN.md                 设计与规则说明
@@ -107,7 +107,7 @@ make css
 cd web/tailwind && npm run watch
 ```
 
-前端脚本 `app.js`（交互）与 `motion.js`（动效）都是无依赖的原生 JavaScript，随二进制内嵌。动效参考 anime.js 的 stagger、timeline 与 spring 缓动，但用 Web Animations API 实现，避免引入额外的运行时依赖；`prefers-reduced-motion` 下会自动关闭。
+前端脚本 `app.js`（交互）、`motion.js`（入场/反馈动效）与 `layout.js`（FLIP 布局过渡）都是无依赖的原生 JavaScript，随二进制内嵌。动效参考 anime.js 的 stagger、timeline 与 spring 缓动，布局过渡参考其 `createLayout()` 的 FLIP 思路（先测量、再改 DOM、再反向补偿位移），但都用 Web Animations API 实现，避免引入额外的运行时依赖；`prefers-reduced-motion` 下会自动关闭。
 
 ### 3.3 环境变量
 

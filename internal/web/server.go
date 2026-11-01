@@ -34,8 +34,8 @@ type Server struct {
 func New(store *app.Store) (*Server, error) {
 	// Content-hashed asset URLs let nginx/Cloudflare cache assets for a week
 	// without ever serving stale JavaScript or CSS after a deploy.
-	assetVersions := make(map[string]string, 3)
-	for _, name := range []string{"app.css", "app.js", "motion.js"} {
+	assetVersions := make(map[string]string, 4)
+	for _, name := range []string{"app.css", "app.js", "motion.js", "layout.js"} {
 		data, err := assets.ReadFile("static/" + name)
 		if err != nil {
 			return nil, err

@@ -22,6 +22,23 @@
     return node.closest(selector);
   }
 
+  /* One lazy layout instance per container. The layout module is optional so
+     app.js keeps working if it fails to load. */
+  var layoutCache = typeof WeakMap === "function" ? new WeakMap() : null;
+
+  function layoutFor(root, options) {
+    if (!root || !layoutCache || !window.LPLayout) return null;
+    var layout = layoutCache.get(root);
+    if (!layout) {
+      layout = window.LPLayout.createLayout(root, options);
+      if (layout) layoutCache.set(root, layout);
+    }
+    return layout;
+  }
+
+  var TOAST_LAYOUT = { children: ".toast", duration: 300 };
+  var PAGE_LAYOUT = { children: ".flash, .main, .footer", duration: 320 };
+
   /* ------------------------------------------------------------------
    * Accessible toast (used for disabled-action reasons and copy errors)
    * ---------------------------------------------------------------- */
@@ -57,7 +74,10 @@
     }
 
     function finish() {
+      var layout = layoutFor(region, TOAST_LAYOUT);
+      if (layout) layout.record();
       if (toast.parentNode) toast.parentNode.removeChild(toast);
+      if (layout) layout.animate();
       cleanupToastRegion(region);
     }
 
@@ -90,7 +110,10 @@
     });
     toast.appendChild(close);
 
+    var layout = layoutFor(region, TOAST_LAYOUT);
+    if (layout) layout.record();
     region.appendChild(toast);
+    if (layout) layout.animate();
     if (window.LPMotion) window.LPMotion.toastIn(toast);
 
     var delay =
@@ -111,23 +134,52 @@
     var nav = document.getElementById("mainnav");
     if (!toggle || !nav) return;
 
+    var narrow = window.matchMedia
+      ? window.matchMedia("(max-width: 900px)")
+      : null;
+
+    function isMobile() {
+      return !narrow || narrow.matches;
+    }
+
+    function focusToggle() {
+      try {
+        toggle.focus();
+      } catch (err) {
+        /* no-op */
+      }
+    }
+
     function isOpen() {
       return nav.classList.contains("open");
     }
 
     function setOpen(open, returnFocus) {
       var wasOpen = nav.classList.contains("open");
-      nav.classList.toggle("open", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
-      if (open && !wasOpen && window.LPMotion) {
-        window.LPMotion.navIn(nav);
+
+      if (open === wasOpen) {
+        if (!open && returnFocus) focusToggle();
+        return;
       }
-      if (!open && returnFocus) {
-        try {
-          toggle.focus();
-        } catch (err) {
-          /* no-op */
-        }
+
+      if (open) {
+        nav.classList.add("open");
+        if (isMobile() && window.LPLayout) window.LPLayout.expand(nav);
+        if (window.LPMotion) window.LPMotion.navIn(nav);
+        return;
+      }
+
+      function finish() {
+        nav.classList.remove("open");
+        if (returnFocus) focusToggle();
+      }
+
+      if (isMobile() && window.LPLayout) {
+        window.LPLayout.collapse(nav, finish);
+      } else {
+        if (window.LPLayout) window.LPLayout.reset(nav);
+        finish();
       }
     }
 
@@ -179,7 +231,10 @@
       if (flash.getAttribute("data-dismissing") === "1") return;
       flash.setAttribute("data-dismissing", "1");
       function finish() {
+        var layout = layoutFor(document.body, PAGE_LAYOUT);
+        if (layout) layout.record();
         if (flash.parentNode) flash.parentNode.removeChild(flash);
+        if (layout) layout.animate();
       }
       if (window.LPMotion) window.LPMotion.flashOut(flash, finish);
       else finish();
@@ -470,23 +525,36 @@
       var fields = form.querySelectorAll("[data-kind]");
       if (!radios.length || !fields.length) return;
 
-      function update() {
+      function update(animate) {
         var checked = null;
         Array.prototype.forEach.call(radios, function (radio) {
           if (radio.checked) checked = radio;
         });
         if (!checked) return;
         var kind = checked.value;
-        Array.prototype.forEach.call(fields, function (field) {
-          var match = field.getAttribute("data-kind") === kind;
-          field.hidden = !match;
-        });
+
+        function apply() {
+          Array.prototype.forEach.call(fields, function (field) {
+            field.hidden = field.getAttribute("data-kind") !== kind;
+          });
+        }
+
+        if (animate && window.LPLayout) {
+          window.LPLayout.morph(form, apply, {
+            duration: 240,
+            enter: "[data-kind]"
+          });
+        } else {
+          apply();
+        }
       }
 
       Array.prototype.forEach.call(radios, function (radio) {
-        radio.addEventListener("change", update);
+        radio.addEventListener("change", function () {
+          update(true);
+        });
       });
-      update();
+      update(false);
     });
   }
 
