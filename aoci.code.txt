@@ -71,7 +71,7 @@ motion.js[LU7M]: F:前端动效层：基于 Web Animations API 提供计数器�
 layout.js[LU7L]: F:FLIP 布局过渡层：为 Toast/Flash/导航/表单切换提供位移补偿、进入动画与容器高度展开/收起，导出 window.LPLayout | R:code:internal/web/templates/layout.html,code:internal/web/static/app.js,code:internal/web/static/motion.js | A:window.LPLayout.enabled/createLayout/expand/collapse/morph/reset；createLayout 提供 record/animate/update/revert | S:无依赖、defer 加载；reduced-motion 或缺少 WAAPI 时直接改 DOM 不动画；动画结束或超时后还原内联样式；FLIP 必须先 record 再改 DOM 再 animate
 
 ===/root/campus-leave-pass/internal/web/templates/===
-admin_audit.html[AU5T]: F:管理员审计日志页，展示时间、操作者、动作、对象、详情与 IP | R:code:internal/web/templates/layout.html,code:internal/web/handlers_admin.go | A:GET /admin/audit | S:物理删除假条不写审计，因此列表不会出现删除记录；只读
+admin_audit.html[AU5T]: F:管理员审计日志页，展示时间、操作者、动作、对象、详情与 IP | R:code:internal/web/templates/layout.html,code:internal/web/handlers_admin.go | A:GET /admin/audit | S:物理删除假条不写审计，因此列表不会出现删除记录；只读；动作列用紧凑 code 标签展示，不要套 .pre（会按块级内边距撑满行高）
 admin_class.html[AU6S]: F:管理员班级详情页：班级信息、指派班主任/辅导员、学生与请假、解散班级 | R:code:internal/web/templates/layout.html,code:internal/web/handlers_admin.go | A:POST /admin/classes/{id}/teacher;counselor;disband | S:指派教师移出原班需 confirm_move；解散必须输入完整班级名；学生名单含停用；所有 POST 带 CSRF
 admin_classes.html[AU5T]: F:管理员班级列表与已清理班级快照，支持按名称/专业系搜索 | R:code:internal/web/templates/layout.html,code:internal/web/handlers_admin.go | A:GET /admin/classes?q= | S:管理员不代建班级；待认领显示 7 天倒计时；快照只读
 admin_codes.html[AU6T]: F:注册码生成/列表/停用/延长/增加次数，创建后一次性显示明文 | R:code:internal/web/templates/layout.html,code:internal/web/handlers_admin.go | A:POST /admin/settings/registration-codes | S:明文只显示一次；角色不可改；次数不能低于已用；错误保留表单；停用过期码不预填过期时间
