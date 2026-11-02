@@ -10,6 +10,11 @@ import (
 const oldAuditSchema = `
 CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT);
 CREATE TABLE leave_requests (id INTEGER PRIMARY KEY AUTOINCREMENT);
+CREATE TABLE registration_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role TEXT NOT NULL
+);
+INSERT INTO registration_codes (role) VALUES ('teacher');
 CREATE TABLE login_attempts (
     key TEXT NOT NULL,
     scope TEXT NOT NULL,
@@ -33,6 +38,45 @@ CREATE TABLE admin_audit_logs (
 INSERT INTO admin_audit_logs (actor_name,action,created_at) VALUES ('旧管理员','audit.old',1);
 `
 
+func TestMigrateAddsRegistrationRoles(t *testing.T) {
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "v4.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`
+CREATE TABLE registration_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role TEXT NOT NULL
+);
+INSERT INTO registration_codes (role) VALUES ('counselor');
+CREATE TABLE admin_audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_class_id INTEGER,
+    target_class_name TEXT NOT NULL DEFAULT '',
+    target_department TEXT NOT NULL DEFAULT '',
+    target_building TEXT NOT NULL DEFAULT ''
+);
+PRAGMA user_version = 4;`); err != nil {
+		t.Fatalf("create v4 schema: %v", err)
+	}
+	s := &Store{DB: db}
+	if err := s.migrate(); err != nil {
+		t.Fatalf("migrate v4: %v", err)
+	}
+	var version int
+	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil || version != 5 {
+		t.Fatalf("user_version = %d err=%v，期望 5", version, err)
+	}
+	var role, roles string
+	if err := db.QueryRow(`SELECT role, roles FROM registration_codes WHERE id=1`).Scan(&role, &roles); err != nil {
+		t.Fatalf("读取注册码: %v", err)
+	}
+	if role != "counselor" || roles != "counselor" {
+		t.Fatalf("role/roles = %q/%q，期望 counselor/counselor", role, roles)
+	}
+}
+
 func TestMigrateUpgradesOldAuditSchema(t *testing.T) {
 	for _, oldVersion := range []int{1, 2, 3} {
 		t.Run(fmt.Sprintf("v%d", oldVersion), func(t *testing.T) {
@@ -52,8 +96,12 @@ func TestMigrateUpgradesOldAuditSchema(t *testing.T) {
 				t.Fatalf("migrate v%d: %v", oldVersion, err)
 			}
 			var version int
-			if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil || version != 4 {
-				t.Fatalf("user_version = %d err=%v，期望 4", version, err)
+			if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil || version != 5 {
+				t.Fatalf("user_version = %d err=%v，期望 5", version, err)
+			}
+			var roles string
+			if err := db.QueryRow(`SELECT roles FROM registration_codes WHERE id=1`).Scan(&roles); err != nil || roles != "teacher" {
+				t.Fatalf("registration_codes.roles = %q err=%v，期望 teacher", roles, err)
 			}
 			for _, col := range []string{"target_class_id", "target_class_name", "target_department", "target_building"} {
 				if !tableHasColumn(t, db, "admin_audit_logs", col) {

@@ -103,9 +103,8 @@ type adminCodesData struct {
 	baseData
 	Codes          []app.RegistrationCode
 	NewCode        string
-	NewRole        string
 	Error          string
-	FormRole       string
+	FormRoles      []string
 	FormMaxUses    string
 	FormValidFrom  string
 	FormValidUntil string
@@ -689,16 +688,15 @@ func (s *Server) adminRegistrationCodes(w http.ResponseWriter, r *http.Request) 
 	if _, ok := s.require(w, r, "admin"); !ok {
 		return
 	}
-	s.renderAdminCodes(w, r, http.StatusOK, "", "", "", adminCodesData{})
+	s.renderAdminCodes(w, r, http.StatusOK, "", "", adminCodesData{})
 }
 
-func (s *Server) renderAdminCodes(w http.ResponseWriter, r *http.Request, status int, newCode, newRole, msg string, form adminCodesData) {
+func (s *Server) renderAdminCodes(w http.ResponseWriter, r *http.Request, status int, newCode, msg string, form adminCodesData) {
 	codes, _ := s.store.ListRegistrationCodes(r.Context())
 	b := s.base(w, r, "admin_codes", "注册码")
 	form.baseData = b
 	form.Codes = codes
 	form.NewCode = newCode
-	form.NewRole = newRole
 	form.Error = msg
 	s.render(w, r, status, "admin_codes", form)
 }
@@ -708,7 +706,13 @@ func (s *Server) adminRegistrationCodeCreate(w http.ResponseWriter, r *http.Requ
 	if !ok {
 		return
 	}
-	role := strings.TrimSpace(r.FormValue("role"))
+	roles := r.Form["roles"]
+	if len(roles) == 0 {
+		// Keep a single-role fallback for older forms and tests.
+		if role := strings.TrimSpace(r.FormValue("role")); role != "" {
+			roles = []string{role}
+		}
+	}
 	maxUses, err := strconvParse(r.FormValue("max_uses"))
 	if err != nil {
 		maxUses = 0
@@ -721,9 +725,10 @@ func (s *Server) adminRegistrationCodeCreate(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		validUntil = 0
 	}
-	_, plain, err := s.store.CreateRegistrationCode(r.Context(), u, role, maxUses, validFrom, validUntil, r.FormValue("note"), clientIP(r))
+	_, plain, err := s.store.CreateRegistrationCode(r.Context(), u, roles, maxUses, validFrom, validUntil, r.FormValue("note"), clientIP(r))
 	if err != nil {
-		s.renderAdminCodes(w, r, http.StatusUnprocessableEntity, "", role, err.Error(), adminCodesData{
+		s.renderAdminCodes(w, r, http.StatusUnprocessableEntity, "", err.Error(), adminCodesData{
+			FormRoles:      roles,
 			FormMaxUses:    r.FormValue("max_uses"),
 			FormValidFrom:  r.FormValue("valid_from"),
 			FormValidUntil: r.FormValue("valid_until"),
@@ -731,7 +736,7 @@ func (s *Server) adminRegistrationCodeCreate(w http.ResponseWriter, r *http.Requ
 		})
 		return
 	}
-	s.renderAdminCodes(w, r, http.StatusOK, plain, role, "", adminCodesData{})
+	s.renderAdminCodes(w, r, http.StatusOK, plain, "", adminCodesData{})
 }
 
 func (s *Server) adminRegistrationCodeUpdate(w http.ResponseWriter, r *http.Request) {
@@ -759,7 +764,7 @@ func (s *Server) adminRegistrationCodeUpdate(w http.ResponseWriter, r *http.Requ
 		validUntil = 0
 	}
 	if err := s.store.UpdateRegistrationCode(r.Context(), u, id, maxUses, validUntil, active, clientIP(r)); err != nil {
-		s.renderAdminCodes(w, r, http.StatusUnprocessableEntity, "", "", err.Error(), adminCodesData{})
+		s.renderAdminCodes(w, r, http.StatusUnprocessableEntity, "", err.Error(), adminCodesData{})
 		return
 	}
 	s.redirectFlash(w, r, "/admin/settings/registration-codes", "ok", "注册码已更新。")

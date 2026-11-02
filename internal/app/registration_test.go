@@ -11,7 +11,7 @@ import (
 
 func mustCreateCode(t *testing.T, s *Store, admin User, role string, maxUses int64) (RegistrationCode, string) {
 	t.Helper()
-	c, plain, err := s.CreateRegistrationCode(ctx(), admin, role, maxUses, 0, 0, "测试", "127.0.0.1")
+	c, plain, err := s.CreateRegistrationCode(ctx(), admin, []string{role}, maxUses, 0, 0, "测试", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("CreateRegistrationCode: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestCreateRegistrationCodeValidation(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := s.CreateRegistrationCode(ctx(), tc.actor, tc.role, tc.max, tc.from, tc.until, "", "127.0.0.1")
+			_, _, err := s.CreateRegistrationCode(ctx(), tc.actor, []string{tc.role}, tc.max, tc.from, tc.until, "", "127.0.0.1")
 			if tc.wantSub == "" {
 				if err != nil {
 					t.Fatalf("期望成功，实际错误: %v", err)
@@ -58,7 +58,7 @@ func TestCreateRegistrationCodeValidation(t *testing.T) {
 
 	// 次数上下边界 1/500 都应可用。
 	for _, max := range []int64{1, 500} {
-		c, _, err := s.CreateRegistrationCode(ctx(), admin, "community", max, 0, 0, "", "127.0.0.1")
+		c, _, err := s.CreateRegistrationCode(ctx(), admin, []string{"community"}, max, 0, 0, "", "127.0.0.1")
 		if err != nil {
 			t.Fatalf("max=%d 应成功: %v", max, err)
 		}
@@ -72,7 +72,7 @@ func TestCreateRegistrationCodeDefaultsAndAtRest(t *testing.T) {
 	s, clock, admin := newTestStore(t)
 	now := clock.Unix()
 
-	c, plain, err := s.CreateRegistrationCode(ctx(), admin, "teacher", 5, 0, 0, "备注", "127.0.0.1")
+	c, plain, err := s.CreateRegistrationCode(ctx(), admin, []string{"teacher"}, 5, 0, 0, "备注", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("CreateRegistrationCode: %v", err)
 	}
@@ -183,15 +183,141 @@ func TestRegisterStaffSuccessAndUsage(t *testing.T) {
 	}
 }
 
+func TestCreateRegistrationCodeMultiRole(t *testing.T) {
+	s, _, admin := newTestStore(t)
+
+	c, _, err := s.CreateRegistrationCode(ctx(), admin, []string{"community", "teacher", "teacher"}, 2, 0, 0, "", "")
+	if err != nil {
+		t.Fatalf("CreateRegistrationCode: %v", err)
+	}
+	if c.Role != "teacher" {
+		t.Fatalf("兼容 role = %q，期望首个角色 teacher", c.Role)
+	}
+	if got := strings.Join(c.Roles, ","); got != "teacher,community" {
+		t.Fatalf("roles = %q，期望规范化 teacher,community", got)
+	}
+	if !c.AllowsRole("community") || c.AllowsRole("counselor") {
+		t.Fatalf("AllowsRole 判断错误: %v", c.Roles)
+	}
+
+	if _, _, err := s.CreateRegistrationCode(ctx(), admin, nil, 1, 0, 0, "", ""); err == nil || !strings.Contains(err.Error(), "至少选择一个") {
+		t.Fatalf("空角色错误 = %v", err)
+	}
+	if _, _, err := s.CreateRegistrationCode(ctx(), admin, []string{"admin"}, 1, 0, 0, "", ""); err == nil || !strings.Contains(err.Error(), "班主任、辅导员或社区老师") {
+		t.Fatalf("非法角色错误 = %v", err)
+	}
+}
+
+func TestInspectRegistrationCodeDoesNotConsume(t *testing.T) {
+	s, _, admin := newTestStore(t)
+	code, plain := mustCreateCode(t, s, admin, "teacher", 1)
+
+	got, err := s.InspectRegistrationCode(ctx(), " "+plain+" ")
+	if err != nil {
+		t.Fatalf("InspectRegistrationCode: %v", err)
+	}
+	if got.ID != code.ID || !got.AllowsRole("teacher") {
+		t.Fatalf("检查结果 = %+v", got)
+	}
+	if used := s.GetRegistrationCode(ctx(), code.ID).UsedCount; used != 0 {
+		t.Fatalf("检查不应消耗次数，used=%d", used)
+	}
+
+	if _, err := s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: plain, Role: "teacher", Username: "检查老师", Password: "Passw0rd", Phone: "13955550001",
+	}, "203.0.113.20", "unit-test", ""); err != nil {
+		t.Fatalf("RegisterStaff: %v", err)
+	}
+	if _, err := s.InspectRegistrationCode(ctx(), plain); !errors.Is(err, ErrCodeUnavailable) {
+		t.Fatalf("用完后检查错误 = %v，期望 ErrCodeUnavailable", err)
+	}
+	if _, err := s.InspectRegistrationCode(ctx(), "AAAA-BBBB-CCCC"); !errors.Is(err, ErrCodeUnavailable) {
+		t.Fatalf("不存在注册码错误 = %v，期望 ErrCodeUnavailable", err)
+	}
+}
+
+func TestRegisterStaffMultiRole(t *testing.T) {
+	s, _, admin := newTestStore(t)
+	code, plain, err := s.CreateRegistrationCode(ctx(), admin, []string{"teacher", "counselor"}, 2, 0, 0, "", "")
+	if err != nil {
+		t.Fatalf("CreateRegistrationCode: %v", err)
+	}
+
+	u1, err := s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: plain, Role: "counselor", Username: "多角色甲", Password: "Passw0rd", Phone: "13955550002",
+	}, "203.0.113.21", "unit-test", "")
+	if err != nil {
+		t.Fatalf("注册辅导员: %v", err)
+	}
+	if u1.Role != "counselor" {
+		t.Fatalf("第一个账号角色 = %q，期望 counselor", u1.Role)
+	}
+	u2, err := s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: plain, Role: "teacher", Username: "多角色乙", Password: "Passw0rd", Phone: "13955550003",
+	}, "203.0.113.21", "unit-test", "")
+	if err != nil {
+		t.Fatalf("注册班主任: %v", err)
+	}
+	if u2.Role != "teacher" {
+		t.Fatalf("第二个账号角色 = %q，期望 teacher", u2.Role)
+	}
+	if got := s.GetRegistrationCode(ctx(), code.ID).UsedCount; got != 2 {
+		t.Fatalf("共享次数 = %d，期望 2", got)
+	}
+	var attemptedRole string
+	if err := s.DB.QueryRow(`SELECT role FROM registration_attempts WHERE user_id=? AND success=1`, u1.ID).Scan(&attemptedRole); err != nil {
+		t.Fatalf("读取注册尝试: %v", err)
+	}
+	if attemptedRole != "counselor" {
+		t.Fatalf("注册尝试角色 = %q", attemptedRole)
+	}
+
+	_, err = s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: plain, Role: "community", Username: "多角色丙", Password: "Passw0rd", Phone: "13955550004",
+	}, "203.0.113.21", "unit-test", "")
+	if !errors.Is(err, ErrCodeUnavailable) {
+		t.Fatalf("次数用完后错误 = %v，期望 ErrCodeUnavailable", err)
+	}
+}
+
+func TestRegisterStaffRejectsDisallowedOrMissingRole(t *testing.T) {
+	s, _, admin := newTestStore(t)
+	code, plain := mustCreateCode(t, s, admin, "teacher", 2)
+
+	_, err := s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: plain, Role: "community", Username: "越权老师", Password: "Passw0rd", Phone: "13955550005",
+	}, "203.0.113.22", "unit-test", "")
+	if err == nil || !strings.Contains(err.Error(), "不在该注册码允许范围内") {
+		t.Fatalf("不允许角色错误 = %v", err)
+	}
+	if got := s.GetRegistrationCode(ctx(), code.ID).UsedCount; got != 0 {
+		t.Fatalf("失败后次数 = %d，期望 0", got)
+	}
+
+	multi, multiPlain, err := s.CreateRegistrationCode(ctx(), admin, []string{"teacher", "counselor"}, 2, 0, 0, "", "")
+	if err != nil {
+		t.Fatalf("CreateRegistrationCode multi: %v", err)
+	}
+	_, err = s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: multiPlain, Username: "未选角色", Password: "Passw0rd", Phone: "13955550006",
+	}, "203.0.113.22", "unit-test", "")
+	if err == nil || !strings.Contains(err.Error(), "请选择注册角色") {
+		t.Fatalf("未选角色错误 = %v", err)
+	}
+	if got := s.GetRegistrationCode(ctx(), multi.ID).UsedCount; got != 0 {
+		t.Fatalf("未选角色后次数 = %d，期望 0", got)
+	}
+}
+
 func TestRegisterStaffRejectsExpiredDisabledAndNotYetValid(t *testing.T) {
 	s, clock, admin := newTestStore(t)
 	now := clock.Unix()
 
-	expired, expiredPlain, err := s.CreateRegistrationCode(ctx(), admin, "teacher", 5, now-86400, now-1, "", "")
+	expired, expiredPlain, err := s.CreateRegistrationCode(ctx(), admin, []string{"teacher"}, 5, now-86400, now-1, "", "")
 	if err != nil {
 		t.Fatalf("create expired: %v", err)
 	}
-	_, notYetPlain, err := s.CreateRegistrationCode(ctx(), admin, "teacher", 5, now+3600, now+7200, "", "")
+	_, notYetPlain, err := s.CreateRegistrationCode(ctx(), admin, []string{"teacher"}, 5, now+3600, now+7200, "", "")
 	if err != nil {
 		t.Fatalf("create future: %v", err)
 	}

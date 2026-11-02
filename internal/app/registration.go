@@ -16,6 +16,7 @@ import (
 // StaffRegisterInput is the validated-ish registration request.
 type StaffRegisterInput struct {
 	Code     string
+	Role     string
 	Username string
 	Password string
 	Phone    string
@@ -23,6 +24,78 @@ type StaffRegisterInput struct {
 
 // ErrCodeUnavailable intentionally hides why a code failed.
 var ErrCodeUnavailable = errors.New("注册码不可用（可能已过期、已用完或已停用），请联系管理员")
+
+// Staff roles are the only roles a registration code may grant. The order is
+// also the canonical storage/display order.
+var staffRoleOrder = []string{"teacher", "counselor", "community"}
+
+func isStaffRole(role string) bool {
+	for _, r := range staffRoleOrder {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
+func staffRoleLabel(role string) string {
+	switch role {
+	case "teacher":
+		return "班主任"
+	case "counselor":
+		return "辅导员"
+	case "community":
+		return "社区老师"
+	}
+	return role
+}
+
+// normalizeStaffRoles de-duplicates and orders a role set. An empty set is
+// rejected: every code must grant at least one role.
+func normalizeStaffRoles(raw []string) ([]string, error) {
+	seen := make(map[string]bool, len(raw))
+	for _, role := range raw {
+		role = strings.TrimSpace(role)
+		if role == "" {
+			continue
+		}
+		if !isStaffRole(role) {
+			return nil, errors.New("注册码角色只能是班主任、辅导员或社区老师")
+		}
+		seen[role] = true
+	}
+	if len(seen) == 0 {
+		return nil, errors.New("请至少选择一个注册角色")
+	}
+	out := make([]string, 0, len(seen))
+	for _, role := range staffRoleOrder {
+		if seen[role] {
+			out = append(out, role)
+		}
+	}
+	return out, nil
+}
+
+func splitStoredRoles(raw, fallback string) []string {
+	seen := make(map[string]bool)
+	for _, role := range strings.Split(raw, ",") {
+		role = strings.TrimSpace(role)
+		if role == "" || seen[role] || !isStaffRole(role) {
+			continue
+		}
+		seen[role] = true
+	}
+	if len(seen) == 0 && isStaffRole(fallback) {
+		seen[fallback] = true
+	}
+	out := make([]string, 0, len(seen))
+	for _, role := range staffRoleOrder {
+		if seen[role] {
+			out = append(out, role)
+		}
+	}
+	return out
+}
 
 // IPPrefix aggregates IPv6 to /64 for rate limiting.
 func IPPrefix(ip string) string {
@@ -100,6 +173,47 @@ func boolInt(b bool) int {
 	return 0
 }
 
+const registrationCodeCols = `id, code_hash, code_hint, role, roles, max_uses, used_count,
+	valid_from, valid_until, active, note, COALESCE(created_by,0), created_at, updated_at,
+	COALESCE(disabled_at,0), COALESCE(last_used_at,0)`
+
+func scanRegistrationCode(r rowScanner) (RegistrationCode, error) {
+	var c RegistrationCode
+	var roles string
+	err := r.Scan(&c.ID, &c.CodeHash, &c.CodeHint, &c.Role, &roles, &c.MaxUses, &c.UsedCount,
+		&c.ValidFrom, &c.ValidUntil, &c.Active, &c.Note, &c.CreatedBy, &c.CreatedAt,
+		&c.UpdatedAt, &c.DisabledAt, &c.LastUsedAt)
+	if err != nil {
+		return c, err
+	}
+	c.Roles = splitStoredRoles(roles, c.Role)
+	return c, nil
+}
+
+// InspectRegistrationCode validates a code without consuming a use. It is
+// used by the two-step registration form to show only the roles this code
+// allows.
+func (s *Store) InspectRegistrationCode(ctx context.Context, raw string) (RegistrationCode, error) {
+	norm := secure.NormalizeCode(raw)
+	if norm == "" {
+		return RegistrationCode{}, ErrCodeUnavailable
+	}
+	c, err := scanRegistrationCode(s.DB.QueryRowContext(ctx,
+		`SELECT `+registrationCodeCols+` FROM registration_codes WHERE code_hash=?`,
+		secure.HMACHex(s.RegistrationSecret(), norm)))
+	if errors.Is(err, sql.ErrNoRows) {
+		return RegistrationCode{}, ErrCodeUnavailable
+	}
+	if err != nil {
+		return RegistrationCode{}, err
+	}
+	now := s.NowUnix()
+	if !c.Active || now < c.ValidFrom || now > c.ValidUntil || c.UsedCount >= c.MaxUses {
+		return RegistrationCode{}, ErrCodeUnavailable
+	}
+	return c, nil
+}
+
 // RegisterStaff creates a teacher/counselor/community account using an
 // administrator-issued code. Any failure rolls the code usage back.
 func (s *Store) RegisterStaff(ctx context.Context, in StaffRegisterInput, ip, ua, deviceHash string) (User, error) {
@@ -128,12 +242,8 @@ func (s *Store) RegisterStaff(ctx context.Context, in StaffRegisterInput, ip, ua
 	now := s.NowUnix()
 	var newUser User
 	err = s.withTx(ctx, func(tx *sql.Tx) error {
-		var code RegistrationCode
-		err := tx.QueryRowContext(ctx, `SELECT id, code_hash, code_hint, role, max_uses, used_count, valid_from, valid_until,
-			active, note, COALESCE(created_by,0), created_at, updated_at, COALESCE(disabled_at,0), COALESCE(last_used_at,0)
-			FROM registration_codes WHERE code_hash=?`, hash).Scan(&code.ID, &code.CodeHash, &code.CodeHint, &code.Role,
-			&code.MaxUses, &code.UsedCount, &code.ValidFrom, &code.ValidUntil, &code.Active, &code.Note,
-			&code.CreatedBy, &code.CreatedAt, &code.UpdatedAt, &code.DisabledAt, &code.LastUsedAt)
+		code, err := scanRegistrationCode(tx.QueryRowContext(ctx,
+			`SELECT `+registrationCodeCols+` FROM registration_codes WHERE code_hash=?`, hash))
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrCodeUnavailable
 		}
@@ -142,6 +252,17 @@ func (s *Store) RegisterStaff(ctx context.Context, in StaffRegisterInput, ip, ua
 		}
 		if !code.Active || now < code.ValidFrom || now > code.ValidUntil || code.UsedCount >= code.MaxUses {
 			return ErrCodeUnavailable
+		}
+		allowed := code.AllowedRoles()
+		chosen := strings.TrimSpace(in.Role)
+		if chosen == "" {
+			if len(allowed) != 1 {
+				return errors.New("该注册码可用于多个角色，请选择注册角色")
+			}
+			chosen = allowed[0]
+		}
+		if !code.AllowsRole(chosen) {
+			return errors.New("所选角色不在该注册码允许范围内，请返回上一步重新选择")
 		}
 		res, err := tx.ExecContext(ctx, `UPDATE registration_codes SET used_count=used_count+1, last_used_at=?, updated_at=?
 			WHERE id=? AND active=1 AND used_count<max_uses AND valid_from<=? AND valid_until>=?`,
@@ -165,7 +286,7 @@ func (s *Store) RegisterStaff(ctx context.Context, in StaffRegisterInput, ip, ua
 		}
 		res, err = tx.ExecContext(ctx, `INSERT INTO users (phone,username,username_norm,password_hash,role,status,
 			password_is_initial,registration_code_id,created_at,updated_at) VALUES (?,?,?,?,?, 'active', 0, ?,?,?)`,
-			phone, displayName, usernameNorm, pwHash, code.Role, code.ID, now, now)
+			phone, displayName, usernameNorm, pwHash, chosen, code.ID, now, now)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				return errors.New("用户名或手机号已被使用")
@@ -177,7 +298,7 @@ func (s *Store) RegisterStaff(ctx context.Context, in StaffRegisterInput, ip, ua
 		if err != nil {
 			return err
 		}
-		s.recordRegistrationAttempt(ctx, tx, ip, ua, deviceHash, code.ID, code.Role, id, true, "成功")
+		s.recordRegistrationAttempt(ctx, tx, ip, ua, deviceHash, code.ID, chosen, id, true, "成功")
 		return nil
 	})
 	if err != nil {
@@ -188,19 +309,20 @@ func (s *Store) RegisterStaff(ctx context.Context, in StaffRegisterInput, ip, ua
 		if len(reason) > 100 {
 			reason = reason[:100]
 		}
-		s.recordRegistrationAttempt(ctx, nil, ip, ua, deviceHash, 0, "", 0, false, reason)
+		s.recordRegistrationAttempt(ctx, nil, ip, ua, deviceHash, 0, strings.TrimSpace(in.Role), 0, false, reason)
 		return User{}, err
 	}
 	return newUser, nil
 }
 
 // CreateRegistrationCode issues a new code and returns its one-time plaintext.
-func (s *Store) CreateRegistrationCode(ctx context.Context, admin User, role string, maxUses int64, validFrom, validUntil int64, note, ip string) (RegistrationCode, string, error) {
+func (s *Store) CreateRegistrationCode(ctx context.Context, admin User, roles []string, maxUses int64, validFrom, validUntil int64, note, ip string) (RegistrationCode, string, error) {
 	if admin.Role != "admin" {
 		return RegistrationCode{}, "", errors.New("只有管理员可以创建注册码")
 	}
-	if role != "teacher" && role != "counselor" && role != "community" {
-		return RegistrationCode{}, "", errors.New("注册码角色只能是班主任、辅导员或社区老师")
+	roles, err := normalizeStaffRoles(roles)
+	if err != nil {
+		return RegistrationCode{}, "", err
 	}
 	if maxUses < 1 || maxUses > 500 {
 		return RegistrationCode{}, "", errors.New("可用次数需为 1–500")
@@ -228,32 +350,34 @@ func (s *Store) CreateRegistrationCode(ctx context.Context, admin User, role str
 		return RegistrationCode{}, "", err
 	}
 	hash := secure.HMACHex(s.RegistrationSecret(), norm)
+	roleLabels := make([]string, 0, len(roles))
+	for _, role := range roles {
+		roleLabels = append(roleLabels, staffRoleLabel(role))
+	}
 	res, err := s.DB.ExecContext(ctx, `INSERT INTO registration_codes
-		(code_hash,code_hint,role,max_uses,used_count,valid_from,valid_until,active,note,created_by,created_at,updated_at)
-		VALUES (?,?,?,?,0,?,?,1,?,?,?,?)`, hash, secure.CodeHint(norm), role, maxUses, validFrom, validUntil, note, admin.ID, now, now)
+		(code_hash,code_hint,role,roles,max_uses,used_count,valid_from,valid_until,active,note,created_by,created_at,updated_at)
+		VALUES (?,?,?,?,?,0,?,?,1,?,?,?,?)`, hash, secure.CodeHint(norm), roles[0], strings.Join(roles, ","),
+		maxUses, validFrom, validUntil, note, admin.ID, now, now)
 	if err != nil {
 		return RegistrationCode{}, "", err
 	}
 	id, _ := res.LastInsertId()
 	_ = s.Audit(ctx, nil, admin, "regcode.create", "registration_code", id,
-		fmt.Sprintf("角色 %s，次数 %d，有效期至 %s", role, maxUses, time.Unix(validUntil, 0).In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04")), ip)
+		fmt.Sprintf("角色 %s，次数 %d，有效期至 %s", strings.Join(roleLabels, "、"), maxUses,
+			time.Unix(validUntil, 0).In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04")), ip)
 	return s.GetRegistrationCode(ctx, id), display, nil
 }
 
 // GetRegistrationCode loads one code row.
 func (s *Store) GetRegistrationCode(ctx context.Context, id int64) RegistrationCode {
-	var c RegistrationCode
-	_ = s.DB.QueryRowContext(ctx, `SELECT id, code_hash, code_hint, role, max_uses, used_count, valid_from, valid_until,
-		active, note, COALESCE(created_by,0), created_at, updated_at, COALESCE(disabled_at,0), COALESCE(last_used_at,0)
-		FROM registration_codes WHERE id=?`, id).Scan(&c.ID, &c.CodeHash, &c.CodeHint, &c.Role, &c.MaxUses,
-		&c.UsedCount, &c.ValidFrom, &c.ValidUntil, &c.Active, &c.Note, &c.CreatedBy, &c.CreatedAt,
-		&c.UpdatedAt, &c.DisabledAt, &c.LastUsedAt)
+	c, _ := scanRegistrationCode(s.DB.QueryRowContext(ctx,
+		`SELECT `+registrationCodeCols+` FROM registration_codes WHERE id=?`, id))
 	return c
 }
 
 // ListRegistrationCodes lists all codes with creator names.
 func (s *Store) ListRegistrationCodes(ctx context.Context) ([]RegistrationCode, error) {
-	rows, err := s.DB.QueryContext(ctx, `SELECT rc.id, rc.code_hash, rc.code_hint, rc.role, rc.max_uses, rc.used_count,
+	rows, err := s.DB.QueryContext(ctx, `SELECT rc.id, rc.code_hash, rc.code_hint, rc.role, rc.roles, rc.max_uses, rc.used_count,
 		rc.valid_from, rc.valid_until, rc.active, rc.note, COALESCE(rc.created_by,0), rc.created_at, rc.updated_at,
 		COALESCE(rc.disabled_at,0), COALESCE(rc.last_used_at,0), COALESCE(u.username,'')
 		FROM registration_codes rc LEFT JOIN users u ON u.id=rc.created_by ORDER BY rc.created_at DESC`)
@@ -264,11 +388,13 @@ func (s *Store) ListRegistrationCodes(ctx context.Context) ([]RegistrationCode, 
 	var out []RegistrationCode
 	for rows.Next() {
 		var c RegistrationCode
-		if err := rows.Scan(&c.ID, &c.CodeHash, &c.CodeHint, &c.Role, &c.MaxUses, &c.UsedCount,
+		var roles string
+		if err := rows.Scan(&c.ID, &c.CodeHash, &c.CodeHint, &c.Role, &roles, &c.MaxUses, &c.UsedCount,
 			&c.ValidFrom, &c.ValidUntil, &c.Active, &c.Note, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
 			&c.DisabledAt, &c.LastUsedAt, &c.CreatorName); err != nil {
 			return nil, err
 		}
+		c.Roles = splitStoredRoles(roles, c.Role)
 		out = append(out, c)
 	}
 	return out, rows.Err()

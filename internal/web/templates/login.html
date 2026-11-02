@@ -7,11 +7,11 @@
       {{template "csrf" .}}
       <label class="field">
         <span>{{if eq .Mode "student"}}学号{{else}}用户名或手机号{{end}}</span>
-        <input name="ident" value="{{.Ident}}" autocomplete="username" required autofocus>
+        <input name="ident" value="{{.Ident}}" autocomplete="username" required {{if not .Ident}}autofocus{{end}}>
       </label>
       <label class="field">
         <span>密码</span>
-        <input type="password" name="password" autocomplete="current-password" required>
+        <input type="password" name="password" autocomplete="current-password" required {{if .Ident}}autofocus{{end}}>
       </label>
       <button class="btn btn-primary btn-block" type="submit">登录</button>
     </form>

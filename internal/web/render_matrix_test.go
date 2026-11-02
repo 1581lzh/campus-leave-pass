@@ -160,7 +160,7 @@ func TestRenderMatrix(t *testing.T) {
 		class.ID, teacher.ID, "渲染测试名单.xlsx", 2, 2, 0, ip, now); err != nil {
 		t.Fatalf("insert import batch: %v", err)
 	}
-	if _, _, err := store.CreateRegistrationCode(ctx, admin, "teacher", 5, now, now+7*86400, "渲染测试注册码", ip); err != nil {
+	if _, _, err := store.CreateRegistrationCode(ctx, admin, []string{"teacher"}, 5, now, now+7*86400, "渲染测试注册码", ip); err != nil {
 		t.Fatalf("CreateRegistrationCode: %v", err)
 	}
 	if err := store.Audit(ctx, nil, admin, "render.test", "system", 0, "渲染矩阵测试审计记录", ip); err != nil {

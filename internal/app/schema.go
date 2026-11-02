@@ -8,6 +8,7 @@ CREATE TABLE registration_codes (
     code_hash TEXT NOT NULL UNIQUE,
     code_hint TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('teacher','counselor','community')),
+    roles TEXT NOT NULL DEFAULT '',
     max_uses INTEGER NOT NULL,
     used_count INTEGER NOT NULL DEFAULT 0,
     valid_from INTEGER NOT NULL,
@@ -388,7 +389,7 @@ func (s *Store) migrate() error {
 	if err := s.DB.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
 		return err
 	}
-	if v >= 4 {
+	if v >= 5 {
 		return nil
 	}
 	tx, err := s.DB.Begin()
@@ -407,7 +408,7 @@ func (s *Store) migrate() error {
 			return err
 		}
 	}
-	if v > 0 {
+	if v > 0 && v < 4 {
 		// Keep the v3 index migration for the TTL cleanup of rate-limit rows.
 		if _, err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_login_attempts_updated ON login_attempts(updated_at)`); err != nil {
 			return err
@@ -425,6 +426,16 @@ func (s *Store) migrate() error {
 			}
 		}
 	}
+	if v > 0 && v < 5 {
+		// v5 allows one code to be used for several staff roles. role stays
+		// populated as the first allowed role for older binaries.
+		if _, err := tx.Exec(`ALTER TABLE registration_codes ADD COLUMN roles TEXT NOT NULL DEFAULT ''`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE registration_codes SET roles=role WHERE roles=''`); err != nil {
+			return err
+		}
+	}
 	for _, stmt := range []string{
 		`CREATE INDEX IF NOT EXISTS idx_audit_target_class ON admin_audit_logs(target_class_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_target_department ON admin_audit_logs(target_department)`,
@@ -434,7 +445,7 @@ func (s *Store) migrate() error {
 			return err
 		}
 	}
-	if _, err := tx.Exec(`PRAGMA user_version = 4`); err != nil {
+	if _, err := tx.Exec(`PRAGMA user_version = 5`); err != nil {
 		return err
 	}
 	return tx.Commit()

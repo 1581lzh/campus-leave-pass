@@ -346,6 +346,7 @@ type RegistrationCode struct {
 	CodeHash    string
 	CodeHint    string
 	Role        string
+	Roles       []string
 	MaxUses     int64
 	UsedCount   int64
 	ValidFrom   int64
@@ -358,6 +359,28 @@ type RegistrationCode struct {
 	DisabledAt  int64
 	LastUsedAt  int64
 	CreatorName string
+}
+
+// AllowedRoles returns the staff roles this code may register. Older rows
+// migrated from the single-role schema fall back to Role.
+func (rc RegistrationCode) AllowedRoles() []string {
+	if len(rc.Roles) > 0 {
+		return rc.Roles
+	}
+	if rc.Role != "" {
+		return []string{rc.Role}
+	}
+	return nil
+}
+
+// AllowsRole reports whether the code permits the given staff role.
+func (rc RegistrationCode) AllowsRole(role string) bool {
+	for _, r := range rc.AllowedRoles() {
+		if r == role {
+			return true
+		}
+	}
+	return false
 }
 
 // Status renders the derived lifecycle state.

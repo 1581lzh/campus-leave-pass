@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -22,7 +24,10 @@ type loginData struct {
 
 type registerData struct {
 	baseData
+	Step     string
 	Code     string
+	Roles    []string
+	Role     string
 	Username string
 	Phone    string
 	Error    string
@@ -93,7 +98,14 @@ func (s *Server) staffLoginPage(w http.ResponseWriter, r *http.Request) {
 		s.redirect(w, r, roleHome(u))
 		return
 	}
-	s.renderLogin(w, r, http.StatusOK, "staff", "", "")
+	// Registration redirects here with the fresh username so the tester does
+	// not have to retype it. Keep the value bounded; the real check happens on
+	// POST /staff/login.
+	ident := strings.TrimSpace(r.URL.Query().Get("username"))
+	if len(ident) > 64 {
+		ident = ""
+	}
+	s.renderLogin(w, r, http.StatusOK, "staff", ident, "")
 }
 
 func (s *Server) adminLoginPage(w http.ResponseWriter, r *http.Request) {
@@ -245,37 +257,110 @@ func (s *Server) registerInfo(w http.ResponseWriter, r *http.Request) {
 	s.renderPage(w, r, "register", struct{ baseData }{b})
 }
 
+const (
+	registerStepCode     = "code"
+	registerStepRegister = "register"
+)
+
 func (s *Server) staffRegisterPage(w http.ResponseWriter, r *http.Request) {
 	if u, ok := s.authed(r); ok {
 		s.redirect(w, r, roleHome(u))
 		return
 	}
-	s.renderRegister(w, r, http.StatusOK, "", "", "", "")
+	s.renderRegisterCode(w, r, http.StatusOK, "", "")
 }
 
-func (s *Server) renderRegister(w http.ResponseWriter, r *http.Request, status int, code, username, phone, msg string) {
+func (s *Server) renderRegisterCode(w http.ResponseWriter, r *http.Request, status int, code, msg string) {
 	b := s.base(w, r, "staff_register", "教职工注册")
-	s.render(w, r, status, "staff_register", registerData{baseData: b, Code: code, Username: username, Phone: phone, Error: msg})
+	s.render(w, r, status, "staff_register", registerData{
+		baseData: b, Step: registerStepCode, Code: code, Error: msg,
+	})
+}
+
+func (s *Server) renderRegisterForm(w http.ResponseWriter, r *http.Request, status int, code string, roles []string, role, username, phone, msg string) {
+	// Only roles belonging to this code may reach the page. A tampered value
+	// is dropped instead of being echoed back.
+	if role != "" && !slices.Contains(roles, role) {
+		role = ""
+	}
+	if role == "" && len(roles) == 1 {
+		role = roles[0]
+	}
+	b := s.base(w, r, "staff_register", "教职工注册")
+	s.render(w, r, status, "staff_register", registerData{
+		baseData: b, Step: registerStepRegister, Code: code, Roles: roles,
+		Role: role, Username: username, Phone: phone, Error: msg,
+	})
 }
 
 func (s *Server) staffRegisterPost(w http.ResponseWriter, r *http.Request) {
+	step := r.FormValue("step")
+	// Older forms posted all fields at once. Keep them working while the
+	// normal flow uses an explicit two-step marker.
+	if step == registerStepRegister || (step == "" && r.FormValue("username") != "") {
+		s.staffRegisterSubmit(w, r)
+		return
+	}
+	s.staffRegisterCheck(w, r)
+}
+
+// staffRegisterCheck validates the code without consuming a use, then shows
+// the second step with only the roles this code allows. Before a code is
+// entered, the page contains no role names at all.
+func (s *Server) staffRegisterCheck(w http.ResponseWriter, r *http.Request) {
+	code := strings.TrimSpace(r.FormValue("code"))
+	if code == "" {
+		s.renderRegisterCode(w, r, http.StatusUnprocessableEntity, "", "请输入注册码。")
+		return
+	}
+	ip := clientIP(r)
+	if locked, msg := s.loginLocked(r, "reg_fail", ip); locked {
+		s.renderRegisterCode(w, r, http.StatusTooManyRequests, code, msg)
+		return
+	}
+	if err := s.store.RegistrationAllowed(r.Context(), ip); err != nil {
+		s.renderRegisterCode(w, r, http.StatusUnprocessableEntity, code, err.Error())
+		return
+	}
+	c, err := s.store.InspectRegistrationCode(r.Context(), code)
+	if err != nil {
+		_ = s.store.RecordLoginFailure(r.Context(), "reg_fail", ip, 10*time.Minute, 30*time.Minute, 10)
+		s.renderRegisterCode(w, r, http.StatusUnprocessableEntity, code, app.ErrCodeUnavailable.Error())
+		return
+	}
+	s.renderRegisterForm(w, r, http.StatusOK, code, c.AllowedRoles(), "", "", "", "")
+}
+
+func (s *Server) staffRegisterSubmit(w http.ResponseWriter, r *http.Request) {
 	in := app.StaffRegisterInput{
 		Code:     r.FormValue("code"),
+		Role:     strings.TrimSpace(r.FormValue("role")),
 		Username: r.FormValue("username"),
 		Password: r.FormValue("password"),
 		Phone:    r.FormValue("phone"),
 	}
-	confirm := r.FormValue("password2")
-	if in.Password != confirm {
-		s.renderRegister(w, r, http.StatusUnprocessableEntity, in.Code, in.Username, in.Phone, "两次输入的密码不一致。")
+	if in.Password != r.FormValue("password2") {
+		s.renderRegisterFailure(w, r, in, "两次输入的密码不一致。")
 		return
 	}
-	_, err := s.store.RegisterStaff(r.Context(), in, clientIP(r), r.UserAgent(), s.deviceHash(w, r))
+	u, err := s.store.RegisterStaff(r.Context(), in, clientIP(r), r.UserAgent(), s.deviceHash(w, r))
 	if err != nil {
-		s.renderRegister(w, r, http.StatusUnprocessableEntity, in.Code, in.Username, in.Phone, err.Error())
+		s.renderRegisterFailure(w, r, in, err.Error())
 		return
 	}
-	s.redirectFlash(w, r, "/staff/login", "ok", "注册成功，请使用新账号登录。")
+	s.redirectFlash(w, r, "/staff/login?username="+url.QueryEscape(u.Username), "ok", "注册成功，请使用新账号登录。")
+}
+
+// renderRegisterFailure keeps the user on the second step when the code is
+// still valid, so only that code's roles remain visible.
+func (s *Server) renderRegisterFailure(w http.ResponseWriter, r *http.Request, in app.StaffRegisterInput, msg string) {
+	c, err := s.store.InspectRegistrationCode(r.Context(), in.Code)
+	if err != nil {
+		s.renderRegisterCode(w, r, http.StatusUnprocessableEntity, in.Code, msg)
+		return
+	}
+	s.renderRegisterForm(w, r, http.StatusUnprocessableEntity, in.Code, c.AllowedRoles(),
+		in.Role, in.Username, in.Phone, msg)
 }
 
 func (s *Server) forgotPage(w http.ResponseWriter, r *http.Request) {

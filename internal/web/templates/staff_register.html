@@ -2,18 +2,42 @@
 <section class="auth-wrap">
   <div class="card auth-card auth-wide">
     <h1>教职工注册</h1>
-    <p class="muted">注册码由管理员发放；角色由注册码决定，注册后不能自行更改。注册码不可用于学生或管理员。</p>
+    {{if eq .Step "register"}}
+    <p class="muted">注册码已校验。请填写账号信息；可注册的角色以该注册码为准。</p>
     {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
     <form method="post" action="/staff/register" class="stack">
       {{template "csrf" .}}
-      <label class="field"><span>注册码</span><input name="code" value="{{.Code}}" placeholder="XXXX-XXXX-XXXX" autocomplete="off" required></label>
-      <label class="field"><span>用户名</span><input name="username" value="{{.Username}}" autocomplete="username" required><small>1–6 个字符，中文、字母或数字；用于登录和显示。</small></label>
+      <input type="hidden" name="step" value="register">
+      <label class="field"><span>注册码</span><input name="code" value="{{.Code}}" autocomplete="off" readonly><small>如需更换注册码，请返回上一步重新输入。</small></label>
+      {{if eq (len .Roles) 1}}
+      <div class="field"><span>注册角色</span><div class="pre">{{roleName (index .Roles 0)}}</div><input type="hidden" name="role" value="{{index .Roles 0}}"><small>该注册码只能注册这个角色。</small></div>
+      {{else}}
+      <label class="field"><span>注册角色</span>
+        <select name="role" required {{if not .Role}}autofocus{{end}}>
+          <option value="">请选择</option>
+          {{range .Roles}}<option value="{{.}}" {{if eq $.Role .}}selected{{end}}>{{roleName .}}</option>{{end}}
+        </select>
+        <small>只能选择该注册码允许的角色。</small>
+      </label>
+      {{end}}
+      <label class="field"><span>用户名</span><input name="username" value="{{.Username}}" autocomplete="username" {{if and (eq (len .Roles) 1) (not .Username)}}autofocus{{end}} required><small>1–6 个字符，中文、字母或数字；用于登录和显示。</small></label>
       <label class="field"><span>手机号</span><input name="phone" value="{{.Phone}}" inputmode="tel" autocomplete="tel" required><small>用于忘记密码时核验，必须唯一。</small></label>
       <label class="field"><span>密码</span><input type="password" name="password" autocomplete="new-password" required><small>5–19 位字母、数字或英文符号，不能有空格。</small></label>
       <label class="field"><span>确认密码</span><input type="password" name="password2" autocomplete="new-password" required></label>
-      <button class="btn btn-primary btn-block" type="submit">注册并登录</button>
+      <button class="btn btn-primary btn-block" type="submit">注册账号</button>
     </form>
     <div class="auth-links"><a href="/staff/login">已有账号，去登录</a><a href="/register">账号说明</a></div>
+    {{else}}
+    <p class="muted">请输入管理员发放的注册码。校验通过后才能继续填写账号信息。</p>
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="/staff/register" class="stack">
+      {{template "csrf" .}}
+      <input type="hidden" name="step" value="code">
+      <label class="field"><span>注册码</span><input name="code" value="{{.Code}}" placeholder="XXXX-XXXX-XXXX" autocomplete="off" required autofocus></label>
+      <button class="btn btn-primary btn-block" type="submit">下一步</button>
+    </form>
+    <div class="auth-links"><a href="/staff/login">已有账号，去登录</a><a href="/register">账号说明</a></div>
+    {{end}}
   </div>
 </section>
 {{end}}
