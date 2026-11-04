@@ -48,7 +48,7 @@ func Load() (Config, error) {
 		DBPath:             env("DB_PATH", "leavepass.db"),
 		SessionSecret:      []byte(os.Getenv("SESSION_SECRET")),
 		RegistrationSecret: []byte(os.Getenv("REGISTRATION_CODE_SECRET")),
-		AdminInitialName:   env("ADMIN_INITIAL_NAME", "admin"),
+		AdminInitialName:   env("ADMIN_INITIAL_NAME", "LOLPK"),
 		AdminInitialPass:   env("ADMIN_INITIAL_PASSWORD", "AA"),
 		AdminInitialPhone:  strings.TrimSpace(os.Getenv("ADMIN_INITIAL_PHONE")),
 		CookieSecure:       os.Getenv("APP_INSECURE_COOKIES") != "1",

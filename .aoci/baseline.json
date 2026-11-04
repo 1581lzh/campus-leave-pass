@@ -1,13 +1,13 @@
 {
   "version": 1,
   "created_at": "2026-10-30T00:31:35Z",
-  "updated_at": "2026-11-04T11:33:53Z",
+  "updated_at": "2026-11-04T11:39:15Z",
   "files": {
     ".env.example": {
       "role": "index",
-      "sha256": "286950b27747c1f7decc029c6ffaa7b18fe52f9ab403642b4571ef6c2dc7dc6d",
+      "sha256": "9236c35f82cd99f955b3324df5dcd2a0ba5265612fd578f96c8374e6c7313a31",
       "size": 3093,
-      "normalized_sha256": "286950b27747c1f7decc029c6ffaa7b18fe52f9ab403642b4571ef6c2dc7dc6d"
+      "normalized_sha256": "9236c35f82cd99f955b3324df5dcd2a0ba5265612fd578f96c8374e6c7313a31"
     },
     ".gitattributes": {
       "role": "index",
@@ -41,9 +41,9 @@
     },
     "LICENSE-COMMERCIAL.md": {
       "role": "index",
-      "sha256": "fb2f18fe86e6cdaef3519fa9b2e57852fb43116b002b76b83f404963073ef11c",
-      "size": 2123,
-      "normalized_sha256": "fb2f18fe86e6cdaef3519fa9b2e57852fb43116b002b76b83f404963073ef11c"
+      "sha256": "781bbc4e1086b04607c0142fc7ce4cd3c09ce6b2c012af481a8233366b205cf4",
+      "size": 2120,
+      "normalized_sha256": "781bbc4e1086b04607c0142fc7ce4cd3c09ce6b2c012af481a8233366b205cf4"
     },
     "Makefile": {
       "role": "index",
@@ -53,21 +53,21 @@
     },
     "PLAN.md": {
       "role": "index",
-      "sha256": "38bc6427e43b8c5e01a09e36bb3f5c862f156279d194bdce37cd28fd7f481694",
+      "sha256": "f68dd37123c4e77f2d655554aca4e665d101dcff231f6c568faa685a5392f593",
       "size": 105000,
-      "normalized_sha256": "38bc6427e43b8c5e01a09e36bb3f5c862f156279d194bdce37cd28fd7f481694"
+      "normalized_sha256": "f68dd37123c4e77f2d655554aca4e665d101dcff231f6c568faa685a5392f593"
     },
     "README.md": {
       "role": "index",
-      "sha256": "df50e37b84ea842e8efef8d2341828635a5c6a5349c7f2a4fd243043169948c8",
-      "size": 18286,
-      "normalized_sha256": "df50e37b84ea842e8efef8d2341828635a5c6a5349c7f2a4fd243043169948c8"
+      "sha256": "a337a4eb98e8b249df7d65f354ba3cbb30595017580266990946b55e3c418780",
+      "size": 18283,
+      "normalized_sha256": "a337a4eb98e8b249df7d65f354ba3cbb30595017580266990946b55e3c418780"
     },
     "SECURITY.md": {
       "role": "index",
-      "sha256": "3348de8465c4a89d7b49b00256347a6e1fd0f6533d10ee955ff5a5452dab4218",
-      "size": 1887,
-      "normalized_sha256": "3348de8465c4a89d7b49b00256347a6e1fd0f6533d10ee955ff5a5452dab4218"
+      "sha256": "e5423ab67bf14acf8ad8196b150ee7798fa57351b3fbaee253792e55d85f25bb",
+      "size": 1883,
+      "normalized_sha256": "e5423ab67bf14acf8ad8196b150ee7798fa57351b3fbaee253792e55d85f25bb"
     },
     "THIRD_PARTY_NOTICES.md": {
       "role": "index",
@@ -77,9 +77,9 @@
     },
     "aoci.code.txt": {
       "role": "index",
-      "sha256": "92891c4027464347fd8d1485a9d2ef137422d0615ef2edb5f33b94dcbaa4b99b",
-      "size": 58568,
-      "normalized_sha256": "92891c4027464347fd8d1485a9d2ef137422d0615ef2edb5f33b94dcbaa4b99b"
+      "sha256": "d3c5f7557225cdaf239aedf30be21b8093927b07eeef53f030b063de3039286e",
+      "size": 58509,
+      "normalized_sha256": "d3c5f7557225cdaf239aedf30be21b8093927b07eeef53f030b063de3039286e"
     },
     "aoci.meta.txt": {
       "role": "index",
@@ -341,10 +341,10 @@
     },
     "internal/config/config.go": {
       "role": "index",
-      "sha256": "f12fcfef9a951a8ef963ae3575b8902d70c7baa3b99cec092cde803f367b91e7",
+      "sha256": "29f6105f7c49a7b6a04663fbd56ca32841148a2a81763e43b57b1840cdb74cf7",
       "size": 3080,
-      "normalized_sha256": "f12fcfef9a951a8ef963ae3575b8902d70c7baa3b99cec092cde803f367b91e7",
-      "format_sha256": "f12fcfef9a951a8ef963ae3575b8902d70c7baa3b99cec092cde803f367b91e7",
+      "normalized_sha256": "29f6105f7c49a7b6a04663fbd56ca32841148a2a81763e43b57b1840cdb74cf7",
+      "format_sha256": "29f6105f7c49a7b6a04663fbd56ca32841148a2a81763e43b57b1840cdb74cf7",
       "format_kind": "gofmt"
     },
     "internal/config/config_test.go": {

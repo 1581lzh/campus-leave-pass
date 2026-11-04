@@ -8,7 +8,7 @@
 
 请**不要**在公开 issue、讨论区或 PR 中披露安全问题。
 
-发送邮件至 **security@example.com**，主题以 `[SECURITY]` 开头，并尽量包含：
+发送邮件至 **lolpk4134@qq.com**，主题以 `[SECURITY]` 开头，并尽量包含：
 
 - 受影响的路由、页面或模块；
 - 复现步骤或最小 PoC；

@@ -134,7 +134,7 @@ make run
 | `REGISTRATION_CODE_SECRET` | 是 | 无 | 注册码 HMAC 密钥，**至少 16 字节**；轮换会使全部注册码失效 |
 | `ADMIN_INITIAL_PHONE` | 首次启动必填 | 无 | 初始管理员手机号（11 位）；仅当库中还没有管理员时使用 |
 | `ADMIN_INITIAL_PASSWORD` | 否 | `AA` | 初始管理员密码，1–19 字符；已有管理员时不会覆盖 |
-| `ADMIN_INITIAL_NAME` | 否 | `admin` | 初始管理员用户名 |
+| `ADMIN_INITIAL_NAME` | 否 | `LOLPK` | 初始管理员用户名 |
 | `APP_BASE_URL` | 否 | `http://127.0.0.1:8080` | 对外访问地址，用于二维码内容与绝对链接；必须以 `http://` 或 `https://` 开头 |
 | `APP_LISTEN` | 否 | `127.0.0.1:8080` | HTTP 监听地址；生产由 nginx 反代，不要直接暴露 |
 | `DB_PATH` | 否 | `leavepass.db` | SQLite 文件路径；启动时自动建目录、迁移并把文件权限设为 0600 |
@@ -250,7 +250,7 @@ sqlite3 /opt/leavepass/leavepass.db "VACUUM INTO '/opt/leavepass/backups/leavepa
 Copyright (C) 2026 1581lzh
 
 - 开源许可：[LICENSE](LICENSE)（AGPL-3.0 全文）。
-- 商业许可说明与联系方式：[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)，邮箱 **license@example.com**。
+- 商业许可说明与联系方式：[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)，邮箱 **lolpk4134@qq.com**。
 - 贡献授权（双许可所需）：[CONTRIBUTING.md](CONTRIBUTING.md)。
 - 第三方组件与许可证：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 - 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
