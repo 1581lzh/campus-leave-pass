@@ -1,5 +1,6 @@
 {{define "content"}}
 {{$now := nowUnix}}
+{{$maxUntil := codeMaxValidUntil}}
 <section class="page-head"><div><p class="eyebrow">管理员</p><h1>注册码</h1><p class="muted">12 位注册码的明文只在创建成功后显示一次；数据库只保存 HMAC 与 hint。丢失后无法找回，只能停用并重新生成。</p></div><div class="head-actions"><a class="btn" href="/admin">返回概览</a></div></section>
 {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
 {{if .NewCode}}
@@ -23,7 +24,7 @@
     </div>
     <label class="field"><span>可用次数（1–500）</span><input type="number" name="max_uses" min="1" max="500" value="{{if .FormMaxUses}}{{.FormMaxUses}}{{else}}1{{end}}" required></label>
     <label class="field"><span>生效时间</span><input type="datetime-local" name="valid_from" value="{{.FormValidFrom}}"><small class="muted">留空表示立即生效。</small></label>
-    <label class="field"><span>失效时间</span><input type="datetime-local" name="valid_until" value="{{.FormValidUntil}}"><small class="muted">留空默认 7 天，最长 90 天。</small></label>
+    <label class="field"><span>失效时间</span><input type="datetime-local" name="valid_until" value="{{.FormValidUntil}}" max="{{$maxUntil}}"><small class="muted">留空默认 7 天，最长 90 天。</small></label>
     <label class="field grow"><span>备注（可选）</span><input name="note" maxlength="200" value="{{.FormNote}}" placeholder="例如：2026 年新入职教师"></label>
     <div class="filter-actions"><button class="btn btn-primary" type="submit">生成注册码</button></div>
   </form>
@@ -66,7 +67,7 @@
             <form method="post" action="/admin/settings/registration-codes/{{.ID}}" class="stack">
               {{template "csrf" $}}
               <label class="field"><span>可用次数</span><input type="number" name="max_uses" min="1" max="500" value="{{.MaxUses}}" required></label>
-              <label class="field"><span>失效时间</span><input type="datetime-local" name="valid_until" value="{{if gt .ValidUntil $now}}{{fmtInput .ValidUntil}}{{end}}"></label>
+              <label class="field"><span>失效时间</span><input type="datetime-local" name="valid_until" value="{{if gt .ValidUntil $now}}{{fmtInput .ValidUntil}}{{end}}" max="{{$maxUntil}}"></label>
               <div class="actions">
                 <button class="btn btn-sm btn-primary" type="submit">保存次数与有效期</button>
                 {{if .Active}}

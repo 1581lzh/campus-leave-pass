@@ -308,6 +308,12 @@ func TestAdminRegistrationCodePageCollapsesUpdateAndDeletes(t *testing.T) {
 			t.Fatalf("注册码页面缺少 %q:\n%s", want, body)
 		}
 	}
+	// Both the create form and the per-code update form must expose the same
+	// 90-day ceiling to the native datetime-local picker.
+	validUntilMax := regexp.MustCompile(`name="valid_until"[^>]*max="[^"]+"`)
+	if got := len(validUntilMax.FindAllString(body, -1)); got != 2 {
+		t.Fatalf("注册码页面带 max 的失效时间输入 = %d，期望 2:\n%s", got, body)
+	}
 
 	deletePath := "/admin/settings/registration-codes/" + strconv.FormatInt(code.ID, 10) + "/delete"
 	rec = webRequest(t, srv, http.MethodPost, deletePath, cookie, nil, csrf, "")
