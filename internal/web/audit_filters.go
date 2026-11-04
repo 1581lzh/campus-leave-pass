@@ -73,6 +73,7 @@ var auditActionLabels = map[string]string{
 	"class.cleanup":                "清理待认领班级",
 	"regcode.create":               "生成注册码",
 	"regcode.update":               "更新注册码",
+	"regcode.delete":               "删除注册码",
 	"leaves.export":                "导出请假记录",
 	"security.revoke_own_sessions": "退出其他设备",
 	"security.unlock":              "解除 IP 限制",

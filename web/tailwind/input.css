@@ -1013,6 +1013,22 @@
     margin: 0.85rem 0 0;
   }
 
+  /* Per-row update forms live inside a table cell; the panel itself must not
+     add the usual bottom margin, and the destructive action is separated. */
+  .update-panel {
+    margin-bottom: 0;
+  }
+
+  .update-panel .filter-panel-body {
+    min-width: 15rem;
+  }
+
+  .update-panel .delete-form {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--line-strong);
+  }
+
   .filters {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));

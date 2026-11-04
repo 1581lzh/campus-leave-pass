@@ -438,6 +438,54 @@ func TestUpdateRegistrationCodeOnlyAdminAndBounds(t *testing.T) {
 	}
 }
 
+func TestDeleteRegistrationCodePreservesAccountsAndAttempts(t *testing.T) {
+	s, _, admin := newTestStore(t)
+	code, plain := mustCreateCode(t, s, admin, "teacher", 2)
+	u, err := s.RegisterStaff(ctx(), StaffRegisterInput{
+		Code: plain, Username: "删除测试", Password: "Passw0rd", Phone: "13944440002",
+	}, "203.0.113.20", "unit-test", "")
+	if err != nil {
+		t.Fatalf("RegisterStaff: %v", err)
+	}
+	if u.RegistrationCodeID != code.ID {
+		t.Fatalf("注册账号关联注册码 = %d，期望 %d", u.RegistrationCodeID, code.ID)
+	}
+
+	teacher := addStaff(t, s, "teacher", "DELADM", "13944440003")
+	if err := s.DeleteRegistrationCode(ctx(), teacher, code.ID, ""); err == nil || !strings.Contains(err.Error(), "只有管理员") {
+		t.Fatalf("非管理员删除错误 = %v", err)
+	}
+	if err := s.DeleteRegistrationCode(ctx(), admin, 999999, ""); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("删除不存在注册码错误 = %v", err)
+	}
+	if err := s.DeleteRegistrationCode(ctx(), admin, code.ID, "127.0.0.1"); err != nil {
+		t.Fatalf("DeleteRegistrationCode: %v", err)
+	}
+	if got := s.GetRegistrationCode(ctx(), code.ID); got.ID != 0 {
+		t.Fatalf("注册码删除后仍存在: %+v", got)
+	}
+	kept, err := s.GetUserByID(ctx(), u.ID)
+	if err != nil {
+		t.Fatalf("已注册账号被删除: %v", err)
+	}
+	if kept.RegistrationCodeID != 0 {
+		t.Fatalf("已注册账号仍关联已删注册码: %d", kept.RegistrationCodeID)
+	}
+	if n := countRows(t, s, `SELECT COUNT(*) FROM registration_attempts WHERE user_id=? AND code_id IS NULL`, u.ID); n != 1 {
+		t.Fatalf("注册尝试未保留或未解除关联: %d", n)
+	}
+	if n := countRows(t, s, `SELECT COUNT(*) FROM admin_audit_logs WHERE action='regcode.delete' AND target_type='registration_code' AND target_id=?`, code.ID); n != 1 {
+		t.Fatalf("删除注册码审计行 = %d，期望 1", n)
+	}
+	var detail string
+	if err := s.DB.QueryRowContext(ctx(), `SELECT detail FROM admin_audit_logs WHERE action='regcode.delete' AND target_id=?`, code.ID).Scan(&detail); err != nil {
+		t.Fatalf("读取删除审计: %v", err)
+	}
+	if !strings.Contains(detail, code.CodeHint) || !strings.Contains(detail, "已用 1 / 2 次") {
+		t.Fatalf("删除审计详情 = %q", detail)
+	}
+}
+
 func TestRegistrationCodeConcurrentLastUseOnlyOneWins(t *testing.T) {
 	s, _, admin := newTestStore(t)
 	code, plain := mustCreateCode(t, s, admin, "teacher", 1)

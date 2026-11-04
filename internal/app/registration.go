@@ -442,8 +442,38 @@ func (s *Store) UpdateRegistrationCode(ctx context.Context, admin User, id int64
 	if _, err := s.DB.ExecContext(ctx, forUpdate, c.MaxUses, c.ValidUntil, boolInt(c.Active), disabled, now, id); err != nil {
 		return err
 	}
+	state := "启用"
+	if !c.Active {
+		state = "停用"
+	}
 	return s.Audit(ctx, nil, admin, "regcode.update", "registration_code", id,
-		fmt.Sprintf("次数 %d，有效期至 %d，启用 %v", c.MaxUses, c.ValidUntil, c.Active), ip)
+		fmt.Sprintf("次数 %d，有效期至 %s，状态 %s", c.MaxUses,
+			time.Unix(c.ValidUntil, 0).In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04"), state), ip)
+}
+
+// DeleteRegistrationCode permanently removes a code. Registered accounts and
+// registration attempts are kept: their registration_code_id/code_id columns
+// use ON DELETE SET NULL, so deleting a code never deletes or disables users.
+func (s *Store) DeleteRegistrationCode(ctx context.Context, admin User, id int64, ip string) error {
+	if admin.Role != "admin" {
+		return errors.New("只有管理员可以删除注册码")
+	}
+	c := s.GetRegistrationCode(ctx, id)
+	if c.ID == 0 {
+		return ErrNotFound
+	}
+	roleLabels := make([]string, 0, len(c.AllowedRoles()))
+	for _, role := range c.AllowedRoles() {
+		roleLabels = append(roleLabels, staffRoleLabel(role))
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM registration_codes WHERE id=?`, id); err != nil {
+			return err
+		}
+		return s.Audit(ctx, tx, admin, "regcode.delete", "registration_code", id,
+			fmt.Sprintf("码 %s，角色 %s，已用 %d / %d 次", c.CodeHint,
+				strings.Join(roleLabels, "、"), c.UsedCount, c.MaxUses), ip)
+	})
 }
 
 // RegistrationAttemptRow is one audit row for the security page.

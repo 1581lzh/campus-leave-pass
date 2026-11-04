@@ -137,6 +137,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/settings/registration-codes", s.adminRegistrationCodes)
 	mux.HandleFunc("POST /admin/settings/registration-codes", s.adminRegistrationCodeCreate)
 	mux.HandleFunc("POST /admin/settings/registration-codes/{id}", s.adminRegistrationCodeUpdate)
+	mux.HandleFunc("POST /admin/settings/registration-codes/{id}/delete", s.adminRegistrationCodeDelete)
 	mux.HandleFunc("GET /admin/recover", s.adminRecoverPage)
 	mux.HandleFunc("POST /admin/recover/verify", s.adminRecoverVerify)
 	mux.HandleFunc("POST /admin/recover/{id}/approve", s.adminRecoverApprove)

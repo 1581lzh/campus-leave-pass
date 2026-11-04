@@ -12,8 +12,8 @@
     <tr>
       <td data-label="时间">{{fmtDateTime .CreatedAt}}</td>
       <td data-label="操作者">{{if .ActorName}}{{.ActorName}}{{else}}—{{end}}</td>
-      <td data-label="动作"><code>{{.Action}}</code></td>
-      <td data-label="对象">{{if .TargetType}}{{.TargetType}}#{{.TargetID}}{{else}}—{{end}}</td>
+      <td data-label="动作">{{auditActionLabel .Action}}</td>
+      <td data-label="对象">{{if .TargetType}}{{auditTargetTypeLabel .TargetType}}#{{.TargetID}}{{else}}—{{end}}</td>
       <td data-label="详情">{{if .Detail}}{{.Detail}}{{else}}—{{end}}</td>
       <td data-label="IP"><code class="muted">{{.IP}}</code></td>
     </tr>

@@ -22,6 +22,6 @@
 </div>
 <div class="grid-2">
   <div class="card"><div class="card-head"><h2>最近导入</h2><a href="/admin/imports">全部</a></div>{{if .Imports}}<ul class="list">{{range .Imports}}<li><div class="list-main"><span class="list-title">{{.ClassName}}{{if not .ClassName}}（班级已解散）{{end}}</span><span class="list-sub">{{.ImporterName}} · {{.FileName}} · 成功 {{.CreatedCount}} / 失败 {{.ErrorCount}} · {{fmtDateTime .CreatedAt}}</span></div></li>{{end}}</ul>{{else}}<p class="muted">暂无导入记录。</p>{{end}}</div>
-  <div class="card"><div class="card-head"><h2>最近管理操作</h2><a href="/admin/audit">审计</a></div>{{if .Audit}}<ul class="list">{{range .Audit}}<li><div class="list-main"><span class="list-title">{{.Action}}</span><span class="list-sub">{{.ActorName}} · {{.Detail}} · {{fmtDateTime .CreatedAt}}</span></div></li>{{end}}</ul>{{else}}<p class="muted">暂无审计记录。</p>{{end}}</div>
+  <div class="card"><div class="card-head"><h2>最近管理操作</h2><a href="/admin/audit">审计</a></div>{{if .Audit}}<ul class="list">{{range .Audit}}<li><div class="list-main"><span class="list-title">{{auditActionLabel .Action}}</span><span class="list-sub">{{.ActorName}} · {{.Detail}} · {{fmtDateTime .CreatedAt}}</span></div></li>{{end}}</ul>{{else}}<p class="muted">暂无审计记录。</p>{{end}}</div>
 </div>
 {{end}}

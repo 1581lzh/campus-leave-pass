@@ -46,20 +46,29 @@
       <td data-label="状态"><span class="badge {{if eq $status "可用"}}badge-approved{{else if eq $status "未生效"}}badge-pending{{else if eq $status "已停用"}}badge-cancelled{{else}}badge-rejected{{end}}">{{$status}}</span></td>
       <td data-label="备注 / 创建人 / 最近使用">{{if .Note}}{{.Note}}{{else}}—{{end}}<br><span class="muted">{{if .CreatorName}}{{.CreatorName}}{{else}}—{{end}} · 最近使用 {{if .LastUsedAt}}{{fmtDateTime .LastUsedAt}}{{else}}—{{end}}</span></td>
       <td data-label="更新">
-        <form method="post" action="/admin/settings/registration-codes/{{.ID}}" class="stack">
-          {{template "csrf" $}}
-          <label class="field"><span>可用次数</span><input type="number" name="max_uses" min="1" max="500" value="{{.MaxUses}}" required></label>
-          <label class="field"><span>失效时间</span><input type="datetime-local" name="valid_until" value="{{if gt .ValidUntil $now}}{{fmtInput .ValidUntil}}{{end}}"></label>
-          <div class="actions">
-            <button class="btn btn-sm btn-primary" type="submit">保存次数与有效期</button>
-            {{if .Active}}
-            <button class="btn btn-sm btn-danger" type="submit" name="action" value="disable" data-confirm="停用后该注册码不能继续使用，已注册账号不受影响。确定停用吗？">停用</button>
-            {{else}}
-            <button class="btn btn-sm" type="submit" name="action" value="enable">启用</button>
-            {{end}}
+        <details class="filter-panel update-panel">
+          <summary class="btn btn-sm filter-toggle">更新</summary>
+          <div class="filter-panel-body">
+            <form method="post" action="/admin/settings/registration-codes/{{.ID}}" class="stack">
+              {{template "csrf" $}}
+              <label class="field"><span>可用次数</span><input type="number" name="max_uses" min="1" max="500" value="{{.MaxUses}}" required></label>
+              <label class="field"><span>失效时间</span><input type="datetime-local" name="valid_until" value="{{if gt .ValidUntil $now}}{{fmtInput .ValidUntil}}{{end}}"></label>
+              <div class="actions">
+                <button class="btn btn-sm btn-primary" type="submit">保存次数与有效期</button>
+                {{if .Active}}
+                <button class="btn btn-sm btn-danger" type="submit" name="action" value="disable" data-confirm="停用后该注册码不能继续使用，已注册账号不受影响。确定停用吗？">停用</button>
+                {{else}}
+                <button class="btn btn-sm" type="submit" name="action" value="enable">启用</button>
+                {{end}}
+              </div>
+              <p class="reason-text">可用次数不能低于已用次数（{{.UsedCount}}）；不能修改角色，换角色请新建注册码。失效时间已过时留空，避免停用被旧日期拦截；填写未来时间可延长有效期。</p>
+            </form>
+            <form method="post" action="/admin/settings/registration-codes/{{.ID}}/delete" class="delete-form" data-confirm="删除后该注册码立即失效且无法恢复；已注册账号会保留，不受影响。确定删除吗？">
+              {{template "csrf" $}}
+              <button class="btn btn-sm btn-danger" type="submit">删除注册码</button>
+            </form>
           </div>
-          <p class="reason-text">可用次数不能低于已用次数（{{.UsedCount}}）；不能修改角色，换角色请新建注册码。失效时间已过时留空，避免停用被旧日期拦截；填写未来时间可延长有效期。</p>
-        </form>
+        </details>
       </td>
     </tr>
     {{end}}

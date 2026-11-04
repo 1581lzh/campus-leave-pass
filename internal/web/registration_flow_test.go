@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -280,5 +281,57 @@ func TestAdminCreatesMultiRoleRegistrationCode(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "请至少选择一个注册角色") {
 		t.Fatalf("未选角色缺少提示: %s", rec.Body.String())
+	}
+}
+
+func TestAdminRegistrationCodePageCollapsesUpdateAndDeletes(t *testing.T) {
+	store, _, admin := newWebStore(t)
+	srv, err := New(store)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	code, _ := createWebRegistrationCode(t, store, admin, []string{"teacher"}, 3)
+	cookie, csrf := webSession(t, store, admin)
+
+	rec := webRequest(t, srv, http.MethodGet, "/admin/settings/registration-codes", cookie, nil, "", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("注册码页面状态 = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`<details class="filter-panel update-panel">`,
+		`<summary class="btn btn-sm filter-toggle">更新</summary>`,
+		`/admin/settings/registration-codes/` + strconv.FormatInt(code.ID, 10) + `/delete`,
+		`>删除注册码</button>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("注册码页面缺少 %q:\n%s", want, body)
+		}
+	}
+
+	deletePath := "/admin/settings/registration-codes/" + strconv.FormatInt(code.ID, 10) + "/delete"
+	rec = webRequest(t, srv, http.MethodPost, deletePath, cookie, nil, csrf, "")
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("删除注册码状态 = %d，期望 303: %s", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); loc != "/admin/settings/registration-codes" {
+		t.Fatalf("删除后跳转 = %q", loc)
+	}
+	if got := store.GetRegistrationCode(context.Background(), code.ID); got.ID != 0 {
+		t.Fatalf("注册码仍存在: %+v", got)
+	}
+	logs, err := store.ListAuditLogs(context.Background(), 20)
+	if err != nil {
+		t.Fatalf("ListAuditLogs: %v", err)
+	}
+	found := false
+	for _, log := range logs {
+		if log.Action == "regcode.delete" && log.TargetType == "registration_code" && log.TargetID == code.ID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("缺少 regcode.delete 审计: %+v", logs)
 	}
 }

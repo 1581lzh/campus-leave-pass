@@ -770,6 +770,23 @@ func (s *Server) adminRegistrationCodeUpdate(w http.ResponseWriter, r *http.Requ
 	s.redirectFlash(w, r, "/admin/settings/registration-codes", "ok", "注册码已更新。")
 }
 
+func (s *Server) adminRegistrationCodeDelete(w http.ResponseWriter, r *http.Request) {
+	u, ok := s.require(w, r, "admin")
+	if !ok {
+		return
+	}
+	id, err := parseID(r, "id")
+	if err != nil {
+		s.error(w, r, http.StatusNotFound, "注册码不存在", "链接中的注册码编号无效。")
+		return
+	}
+	if err := s.store.DeleteRegistrationCode(r.Context(), u, id, clientIP(r)); err != nil {
+		s.postFail(w, r, err)
+		return
+	}
+	s.redirectFlash(w, r, "/admin/settings/registration-codes", "ok", "注册码已删除；已注册账号保留，不受影响。")
+}
+
 func (s *Server) adminRecoverPage(w http.ResponseWriter, r *http.Request) {
 	u, ok := s.require(w, r, "admin")
 	if !ok {

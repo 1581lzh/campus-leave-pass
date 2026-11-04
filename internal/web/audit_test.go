@@ -11,6 +11,62 @@ import (
 	"leavepass/internal/app"
 )
 
+func TestAdminAuditActionsRenderInChinese(t *testing.T) {
+	store, _, admin := newWebStore(t)
+	srv, err := New(store)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	ctx := context.Background()
+	rows := []struct {
+		action     string
+		targetType string
+		targetID   int64
+		detail     string
+	}{
+		{"regcode.update", "registration_code", 1, "次数 3，有效期至 2026-03-20 10:00，状态 启用"},
+		{"security.revoke_own_sessions", "session", 0, "退出其他设备"},
+		{"regcode.delete", "registration_code", 2, "码 TEST，角色 班主任，已用 1 / 2 次"},
+	}
+	for _, row := range rows {
+		if err := store.Audit(ctx, nil, admin, row.action, row.targetType, row.targetID, row.detail, "10.0.0.9"); err != nil {
+			t.Fatalf("Audit(%s): %v", row.action, err)
+		}
+	}
+	cookie, _ := webSession(t, store, admin)
+
+	rec := webRequest(t, srv, http.MethodGet, "/admin/audit", cookie, nil, "", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("审计页状态 = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{"更新注册码", "退出其他设备", "删除注册码", "注册码#1", "会话#0"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("审计页缺少中文 %q:\n%s", want, body)
+		}
+	}
+	for _, raw := range []string{
+		`<code>regcode.update</code>`,
+		`<code>security.revoke_own_sessions</code>`,
+		`<code>regcode.delete</code>`,
+	} {
+		if strings.Contains(body, raw) {
+			t.Fatalf("审计页仍显示原始动作代码 %q", raw)
+		}
+	}
+
+	rec = webRequest(t, srv, http.MethodGet, "/admin", cookie, nil, "", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("概览页状态 = %d", rec.Code)
+	}
+	dash := rec.Body.String()
+	for _, want := range []string{"更新注册码", "退出其他设备", "删除注册码"} {
+		if !strings.Contains(dash, want) {
+			t.Fatalf("概览最近操作缺少中文 %q:\n%s", want, dash)
+		}
+	}
+}
+
 func TestAdminAuditFilters(t *testing.T) {
 	store, _, admin := newWebStore(t)
 	srv, err := New(store)

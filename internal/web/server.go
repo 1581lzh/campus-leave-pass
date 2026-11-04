@@ -73,15 +73,17 @@ func New(store *app.Store) (*Server, error) {
 			}
 			return a * 100 / b
 		},
-		"maskPhone":    maskPhone,
-		"dormString":   func(b, r string) string { return b + "-" + r },
-		"add":          func(a, b int) int { return a + b },
-		"notZero":      func(v int64) bool { return v != 0 },
-		"eqStr":        func(a, b string) bool { return a == b },
-		"nowUnix":      func() int64 { return time.Now().Unix() },
-		"decisionText": decisionText,
-		"hasPrefix":    strings.HasPrefix,
-		"queryPage":    queryPage,
+		"maskPhone":            maskPhone,
+		"dormString":           func(b, r string) string { return b + "-" + r },
+		"add":                  func(a, b int) int { return a + b },
+		"notZero":              func(v int64) bool { return v != 0 },
+		"eqStr":                func(a, b string) bool { return a == b },
+		"nowUnix":              func() int64 { return time.Now().Unix() },
+		"decisionText":         decisionText,
+		"hasPrefix":            strings.HasPrefix,
+		"queryPage":            queryPage,
+		"auditActionLabel":     auditActionLabel,
+		"auditTargetTypeLabel": auditTargetTypeLabel,
 		"contains": func(list []string, want string) bool {
 			for _, v := range list {
 				if v == want {
