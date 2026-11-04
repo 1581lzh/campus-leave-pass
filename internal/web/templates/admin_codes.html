@@ -32,13 +32,27 @@
 <div class="card table-card">
   <div class="card-head"><h2>全部注册码</h2><span class="badge">{{len .Codes}}</span></div>
   {{if .Codes}}
+  <form id="codes-batch" method="post" action="/admin/settings/registration-codes/batch" class="bulk-bar">
+    {{template "csrf" .}}
+    <div class="bulk-bar-head">
+      <strong>批量管理</strong>
+      <span class="muted">勾选“选择”列中的注册码后可批量停用、启用或删除；删除只移除注册码，已注册账号会保留。</span>
+    </div>
+    <div class="bulk-controls">
+      <label class="check"><input type="checkbox" name="confirm" value="1"> 我确认永久删除所选注册码（仅删除时需要）</label>
+      <button class="btn btn-sm" type="submit" name="action" value="disable">批量停用</button>
+      <button class="btn btn-sm" type="submit" name="action" value="enable">批量启用</button>
+      <button class="btn btn-sm btn-danger" type="submit" name="action" value="delete" data-confirm="删除后所选注册码立即失效且无法恢复；已注册账号会保留，不受影响。确定删除吗？">批量删除</button>
+    </div>
+  </form>
   <div class="table-scroll">
   <table>
-    <thead><tr><th>码 hint</th><th>允许角色</th><th>已用 / 上限</th><th>生效 / 失效</th><th>状态</th><th>备注 / 创建人 / 最近使用</th><th>更新</th></tr></thead>
+    <thead><tr><th class="select-col"><span class="sr-only">选择</span><input class="js-only" type="checkbox" data-check-all="codes-batch" aria-label="全选当前列表注册码"></th><th>码 hint</th><th>允许角色</th><th>已用 / 上限</th><th>生效 / 失效</th><th>状态</th><th>备注 / 创建人 / 最近使用</th><th>更新</th></tr></thead>
     <tbody>
     {{range .Codes}}
     {{$status := codeStatus . $now}}
     <tr>
+      <td data-label="选择" class="select-col"><input type="checkbox" name="ids" value="{{.ID}}" form="codes-batch" aria-label="选择注册码 {{.CodeHint}}"></td>
       <td data-label="码 hint"><code>{{.CodeHint}}</code></td>
       <td data-label="允许角色">{{if .Roles}}{{range $i, $r := .Roles}}{{if $i}} / {{end}}{{roleName $r}}{{end}}{{else}}{{roleName .Role}}{{end}}</td>
       <td data-label="已用 / 上限">{{.UsedCount}} / {{.MaxUses}}</td>

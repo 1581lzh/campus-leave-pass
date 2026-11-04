@@ -32,11 +32,27 @@
   </form>
 </div>
 <div class="card table-card">
+  <div class="card-head"><h2>全部用户</h2><span class="muted">共 {{len .Users}} 个；停用后进入 7 天只读保留期</span></div>
   {{if .Users}}
+  <form id="users-batch" method="post" action="/admin/users/batch" class="bulk-bar" data-confirm="停用后所选账号会立即退出登录并进入 7 天只读保留期，到期自动清理。确定停用吗？">
+    {{template "csrf" .}}
+    <input type="hidden" name="role" value="{{.Role}}">
+    <input type="hidden" name="q" value="{{.Query}}">
+    <div class="bulk-bar-head">
+      <strong>批量管理</strong>
+      <span class="muted">勾选“选择”列中的账号后提交；不能停用自己或最后一个可用管理员，失败项会在结果中列出。</span>
+    </div>
+    <div class="bulk-controls">
+      <label class="field bulk-reason"><span>停用原因（可选，应用于全部所选账号）</span><input name="reason" maxlength="200" placeholder="例如：毕业离校 / 账号重复"></label>
+      <label class="check"><input type="checkbox" name="confirm" value="1" required> 我已核对所选账号并确认停用</label>
+      <button class="btn btn-danger" type="submit" name="action" value="soft_delete">批量停用所选账号</button>
+    </div>
+  </form>
   <div class="table-scroll"><table>
-    <thead><tr><th>用户名</th><th>角色</th><th>学号</th><th>手机号</th><th>状态</th><th>最近登录</th><th></th></tr></thead>
+    <thead><tr><th class="select-col"><span class="sr-only">选择</span><input class="js-only" type="checkbox" data-check-all="users-batch" aria-label="全选当前列表账号"></th><th>用户名</th><th>角色</th><th>学号</th><th>手机号</th><th>状态</th><th>最近登录</th><th></th></tr></thead>
     <tbody>
     {{range .Users}}<tr>
+      <td data-label="选择" class="select-col"><input type="checkbox" name="ids" value="{{.ID}}" form="users-batch" {{if ne .Status "active"}}disabled title="已停用账号无需重复操作"{{else if eq .ID $.CurrentUserID}}disabled title="不能停用自己的账号"{{end}} aria-label="选择 {{.Username}}"></td>
       <td data-label="用户名">{{.Username}}{{if .PasswordIsInitial}}<br><span class="warn-text">仍在使用初始密码</span>{{end}}</td>
       <td data-label="角色">{{roleName .Role}}</td>
       <td data-label="学号">{{if eq .Role "student"}}{{if .StudentNo}}{{.StudentNo}}{{else}}—{{end}}{{else}}—{{end}}</td>

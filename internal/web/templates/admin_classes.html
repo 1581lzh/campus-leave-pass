@@ -13,10 +13,24 @@
 <div class="card table-card">
   <div class="card-head"><h2>当前班级</h2><span class="muted">共 {{len .Classes}} 个</span></div>
   {{if .Classes}}
+  <form id="classes-batch" method="post" action="/admin/classes/batch" class="bulk-bar" data-confirm="解散后不可撤销：学生账号会保留并转为暂无班级，待审批假条会取消。确定解散所选班级吗？">
+    {{template "csrf" .}}
+    <input type="hidden" name="q" value="{{.Query}}">
+    <div class="bulk-bar-head">
+      <strong>批量管理</strong>
+      <span class="muted">勾选“选择”列中的班级后可批量解散；此操作不可撤销，请先核对班级名称。</span>
+    </div>
+    <div class="bulk-controls">
+      <label class="field bulk-reason"><span>确认短语（输入“确认解散”）</span><input name="confirm_text" maxlength="20" autocomplete="off" placeholder="确认解散" required></label>
+      <label class="check"><input type="checkbox" name="confirm" value="1" required> 我已核对所选班级，理解学生将转为暂无班级</label>
+      <button class="btn btn-danger" type="submit" name="action" value="disband">批量解散所选班级</button>
+    </div>
+  </form>
   <div class="table-scroll"><table>
-    <thead><tr><th>班级</th><th>专业系</th><th>班主任</th><th>辅导员</th><th>学生数</th><th>状态</th><th></th></tr></thead>
+    <thead><tr><th class="select-col"><span class="sr-only">选择</span><input class="js-only" type="checkbox" data-check-all="classes-batch" aria-label="全选当前列表班级"></th><th>班级</th><th>专业系</th><th>班主任</th><th>辅导员</th><th>学生数</th><th>状态</th><th></th></tr></thead>
     <tbody>
     {{range .Classes}}<tr>
+      <td data-label="选择" class="select-col"><input type="checkbox" name="ids" value="{{.ID}}" form="classes-batch" aria-label="选择 {{.Name}}"></td>
       <td data-label="班级"><a class="list-title" href="/admin/classes/{{.ID}}">{{.Name}}</a></td>
       <td data-label="专业系">{{.Department}}</td>
       <td data-label="班主任">{{if .TeacherName}}{{.TeacherName}}{{else}}<span class="danger-text">待认领</span>{{end}}</td>

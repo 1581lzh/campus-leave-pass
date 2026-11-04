@@ -559,6 +559,57 @@
   }
 
   /* ------------------------------------------------------------------
+   * Batch selection
+   * Checkboxes use the HTML form attribute so they can live in table rows
+   * without nesting forms inside the per-row update forms. Without
+   * JavaScript the checkboxes and batch buttons still submit normally;
+   * only the optional "select all" control is hidden by CSS.
+   * ---------------------------------------------------------------- */
+  function setupBulkSelection() {
+    var toggles = document.querySelectorAll("[data-check-all]");
+    Array.prototype.forEach.call(toggles, function (toggle) {
+      var form = document.getElementById(toggle.getAttribute("data-check-all"));
+      if (!form || !form.elements) return;
+
+      function boxList() {
+        var boxes = [];
+        Array.prototype.forEach.call(form.elements, function (element) {
+          if (
+            element.type === "checkbox" &&
+            element.name === "ids" &&
+            !element.disabled
+          ) {
+            boxes.push(element);
+          }
+        });
+        return boxes;
+      }
+
+      function sync() {
+        var boxes = boxList();
+        var checked = 0;
+        Array.prototype.forEach.call(boxes, function (box) {
+          if (box.checked) checked += 1;
+        });
+        toggle.checked = boxes.length > 0 && checked === boxes.length;
+        toggle.indeterminate = checked > 0 && checked < boxes.length;
+      }
+
+      toggle.addEventListener("change", function () {
+        Array.prototype.forEach.call(boxList(), function (box) {
+          box.checked = toggle.checked;
+        });
+        sync();
+      });
+
+      Array.prototype.forEach.call(boxList(), function (box) {
+        box.addEventListener("change", sync);
+      });
+      sync();
+    });
+  }
+
+  /* ------------------------------------------------------------------
    * Collapsible filter panels
    * The native details element still works without JavaScript; this only
    * replaces the instant toggle with a height/opacity transition.
@@ -588,6 +639,7 @@
     setupCopyButtons();
     setupUtilityButtons();
     setupKindForms();
+    setupBulkSelection();
     setupFilterPanels();
   });
 })();

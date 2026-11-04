@@ -68,10 +68,11 @@ type adminClassData struct {
 
 type adminUsersData struct {
 	baseData
-	Users []app.User
-	Role  string
-	Query string
-	Error string
+	Users         []app.User
+	Role          string
+	Query         string
+	CurrentUserID int64
+	Error         string
 }
 
 type adminUserData struct {
@@ -448,19 +449,15 @@ func (s *Server) adminClassDisband(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.require(w, r, "admin"); !ok {
+	u, ok := s.require(w, r, "admin")
+	if !ok {
 		return
 	}
-	role := strings.TrimSpace(r.URL.Query().Get("role"))
-	switch role {
-	case "student", "teacher", "counselor", "community", "admin":
-	default:
-		role = ""
-	}
+	role := normalizeAdminUserRole(r.URL.Query().Get("role"))
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	users, err := s.store.ListUsers(r.Context(), role, q, 300)
 	b := s.base(w, r, "admin_users", "用户管理")
-	d := adminUsersData{baseData: b, Users: users, Role: role, Query: q}
+	d := adminUsersData{baseData: b, Users: users, Role: role, Query: q, CurrentUserID: u.ID}
 	if err != nil {
 		d.Error = err.Error()
 	}
@@ -478,15 +475,11 @@ func (s *Server) adminUserCreate(w http.ResponseWriter, r *http.Request) {
 	created, err := s.store.CreateAdmin(r.Context(), u, username, phone, password, clientIP(r))
 	if err != nil {
 		users, _ := s.store.ListUsers(r.Context(), "", "", 300)
-		role := strings.TrimSpace(r.FormValue("role"))
-		switch role {
-		case "student", "teacher", "counselor", "community", "admin":
-		default:
-			role = ""
-		}
+		role := normalizeAdminUserRole(r.FormValue("role"))
 		b := s.base(w, r, "admin_users", "用户管理")
 		s.render(w, r, http.StatusUnprocessableEntity, "admin_users", adminUsersData{
-			baseData: b, Users: users, Role: role, Query: strings.TrimSpace(r.FormValue("q")), Error: err.Error(),
+			baseData: b, Users: users, Role: role, Query: strings.TrimSpace(r.FormValue("q")),
+			CurrentUserID: u.ID, Error: err.Error(),
 		})
 		return
 	}

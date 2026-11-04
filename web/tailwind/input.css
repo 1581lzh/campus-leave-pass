@@ -919,6 +919,71 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* ---- Batch selection ------------------------------------------ */
+  html:not(.js) .js-only {
+    display: none !important;
+  }
+
+  .bulk-bar {
+    display: grid;
+    gap: 0.7rem;
+    margin: 0 0.9rem 0.9rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface-2);
+  }
+
+  .bulk-bar-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .bulk-bar-head .muted {
+    font-size: 0.82rem;
+  }
+
+  .bulk-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.65rem 0.9rem;
+  }
+
+  .bulk-controls .bulk-reason {
+    flex: 1 1 15rem;
+    min-width: 12rem;
+  }
+
+  .bulk-controls .check {
+    flex: 1 1 18rem;
+    align-items: center;
+    min-height: 2.45rem;
+  }
+
+  .bulk-controls .check input {
+    margin-top: 0;
+  }
+
+  .select-col {
+    width: 2.6rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .select-col input[type="checkbox"] {
+    margin: 0 auto;
+  }
+
+  @media (max-width: 720px) {
+    .select-col {
+      width: auto;
+      text-align: left;
+    }
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
@@ -2130,6 +2195,7 @@
   .segmented,
   .copybox,
   .pager,
+  .bulk-bar,
   .btn {
     display: none !important;
   }
