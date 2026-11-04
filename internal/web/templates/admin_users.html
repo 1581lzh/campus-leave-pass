@@ -25,9 +25,9 @@
   <p class="muted">管理员只能由现有管理员创建，不能创建学生；学生账号请由本班班主任/辅导员导入。密码最长 19 位，留空时使用默认密码 AA，请通过安全渠道转交并提醒尽快修改。</p>
   <form method="post" action="/admin/users" class="rowform">
     {{template "csrf" .}}
-    <label class="field grow"><span>用户名</span><input name="username" autocomplete="off" required></label>
-    <label class="field grow"><span>手机号</span><input name="phone" inputmode="numeric" maxlength="11" autocomplete="off" required></label>
-    <label class="field grow"><span>初始密码</span><input type="password" name="password" autocomplete="new-password" placeholder="留空使用默认密码 AA"></label>
+    <label class="field grow"><span>用户名</span><input name="username" value="{{.FormUsername}}" autocomplete="off" required></label>
+    <label class="field grow"><span>手机号</span><input name="phone" value="{{.FormPhone}}" inputmode="numeric" maxlength="11" autocomplete="off" required></label>
+    <label class="field grow"><span>初始密码</span><input type="password" name="password" autocomplete="new-password" placeholder="留空使用默认密码 AA"><small>密码不会回显；提交失败后需重新输入。</small></label>
     <button class="btn btn-primary" type="submit">创建管理员</button>
   </form>
 </div>

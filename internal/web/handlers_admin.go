@@ -72,6 +72,8 @@ type adminUsersData struct {
 	Role          string
 	Query         string
 	CurrentUserID int64
+	FormUsername  string
+	FormPhone     string
 	Error         string
 }
 
@@ -479,7 +481,7 @@ func (s *Server) adminUserCreate(w http.ResponseWriter, r *http.Request) {
 		b := s.base(w, r, "admin_users", "用户管理")
 		s.render(w, r, http.StatusUnprocessableEntity, "admin_users", adminUsersData{
 			baseData: b, Users: users, Role: role, Query: strings.TrimSpace(r.FormValue("q")),
-			CurrentUserID: u.ID, Error: err.Error(),
+			CurrentUserID: u.ID, FormUsername: username, FormPhone: phone, Error: err.Error(),
 		})
 		return
 	}

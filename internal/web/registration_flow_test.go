@@ -284,6 +284,179 @@ func TestAdminCreatesMultiRoleRegistrationCode(t *testing.T) {
 	}
 }
 
+func TestAdminUserCreateFailurePreservesUsernameAndPhone(t *testing.T) {
+	store, _, admin := newWebStore(t)
+	if _, err := store.CreateAdmin(context.Background(), admin, "DupAdm", "13988887777", "Passw0rd!", "127.0.0.1"); err != nil {
+		t.Fatalf("CreateAdmin: %v", err)
+	}
+	srv, err := New(store)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	cookie, csrf := webSession(t, store, admin)
+
+	rec := webRequest(t, srv, http.MethodPost, "/admin/users", cookie, url.Values{
+		"username": {"DupAdm"},
+		"phone":    {"13988886666"},
+		"password": {"SecretPass9"},
+	}, csrf, "")
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("重复用户名状态 = %d，期望 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "用户名已被使用") {
+		t.Fatalf("页面缺少重复用户名提示: %s", body)
+	}
+	requireInputValue(t, body, "username", "DupAdm")
+	requireInputValue(t, body, "phone", "13988886666")
+	requirePasswordNotEchoed(t, body, "password", "SecretPass9")
+
+	t.Run("非法用户名按 HTML 转义后保留", func(t *testing.T) {
+		rec := webRequest(t, srv, http.MethodPost, "/admin/users", cookie, url.Values{
+			"username": {"x<y"},
+			"phone":    {"13988885555"},
+			"password": {"SecretPass9"},
+		}, csrf, "")
+		if rec.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("非法用户名状态 = %d，期望 422: %s", rec.Code, rec.Body.String())
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, `name="username" value="x&lt;y"`) {
+			t.Fatalf("非法用户名未转义回填: %s", body)
+		}
+		if strings.Contains(body, `value="x<y"`) {
+			t.Fatal("非法用户名被原样插入 HTML")
+		}
+		requirePasswordNotEchoed(t, body, "password", "SecretPass9")
+	})
+}
+
+func TestStaffRegisterFailurePreservesNonPasswordFields(t *testing.T) {
+	store, _, admin := newWebStore(t)
+	addWebStaff(t, store, "teacher", "RegDup", "13977770001")
+	srv, err := New(store)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	code, plain := createWebRegistrationCode(t, store, admin, []string{"teacher", "counselor"}, 5)
+
+	cookie, csrf := anonymousCSRF(t, srv)
+	cases := []struct {
+		name      string
+		role      string
+		username  string
+		phone     string
+		password2 string
+		wantError string
+	}{
+		{name: "密码不一致", role: "teacher", username: "KeepMe", phone: "13977770002", password2: "OtherPass", wantError: "两次输入的密码不一致"},
+		{name: "重复用户名", role: "counselor", username: "RegDup", phone: "13977770003", password2: "Passw0rd", wantError: "用户名已被使用"},
+		{name: "重复手机号", role: "teacher", username: "Fresh1", phone: "13977770001", password2: "Passw0rd", wantError: "该手机号已被使用"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := webRequest(t, srv, http.MethodPost, "/staff/register", cookie, url.Values{
+				"step":      {"register"},
+				"code":      {plain},
+				"role":      {tc.role},
+				"username":  {tc.username},
+				"phone":     {tc.phone},
+				"password":  {"Passw0rd"},
+				"password2": {tc.password2},
+			}, csrf, "")
+			if rec.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("注册失败状态 = %d，期望 422: %s", rec.Code, rec.Body.String())
+			}
+			body := rec.Body.String()
+			if !strings.Contains(body, tc.wantError) {
+				t.Fatalf("页面缺少错误 %q: %s", tc.wantError, body)
+			}
+			requireInputValue(t, body, "code", plain)
+			requireInputValue(t, body, "username", tc.username)
+			requireInputValue(t, body, "phone", tc.phone)
+			if !strings.Contains(body, `value="`+tc.role+`" selected`) {
+				t.Fatalf("角色 %q 未保持选中: %s", tc.role, body)
+			}
+			requirePasswordNotEchoed(t, body, "password", "Passw0rd", tc.password2)
+			requirePasswordNotEchoed(t, body, "password2", "Passw0rd", tc.password2)
+		})
+	}
+	if got := store.GetRegistrationCode(context.Background(), code.ID).UsedCount; got != 0 {
+		t.Fatalf("失败注册消耗注册码次数 = %d，期望 0", got)
+	}
+}
+
+func TestAdminRegistrationCodeFailurePreservesFormValues(t *testing.T) {
+	store, _, admin := newWebStore(t)
+	srv, err := New(store)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	cookie, csrf := webSession(t, store, admin)
+
+	rec := webRequest(t, srv, http.MethodPost, "/admin/settings/registration-codes", cookie, url.Values{
+		"roles":       {"teacher"},
+		"max_uses":    {"501"},
+		"valid_from":  {"2026-03-15T09:00"},
+		"valid_until": {"2026-03-16T09:00"},
+		"note":        {"保留注册码表单值"},
+	}, csrf, "")
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("无效注册码参数状态 = %d，期望 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "可用次数需为 1–500") {
+		t.Fatalf("页面缺少次数校验提示: %s", body)
+	}
+	for _, want := range []string{
+		`name="roles" value="teacher" checked`,
+		`name="max_uses" min="1" max="500" value="501"`,
+		`name="valid_from" value="2026-03-15T09:00"`,
+		`name="valid_until" value="2026-03-16T09:00"`,
+		`name="note" maxlength="200" value="保留注册码表单值"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("注册码表单未保留 %q: %s", want, body)
+		}
+	}
+	codes, err := store.ListRegistrationCodes(context.Background())
+	if err != nil {
+		t.Fatalf("ListRegistrationCodes: %v", err)
+	}
+	if len(codes) != 0 {
+		t.Fatalf("校验失败仍创建了注册码: %+v", codes)
+	}
+}
+
+func requireInputValue(t *testing.T, body, name, value string) {
+	t.Helper()
+	re := regexp.MustCompile(`<input[^>]*\bname="` + regexp.QuoteMeta(name) + `"[^>]*>`)
+	tag := re.FindString(body)
+	if tag == "" {
+		t.Fatalf("页面缺少 name=%q 的输入框: %s", name, body)
+	}
+	if !strings.Contains(tag, `value="`+value+`"`) {
+		t.Fatalf("输入框 %q 未保留值 %q: %s", name, value, tag)
+	}
+}
+
+func requirePasswordNotEchoed(t *testing.T, body, name string, secrets ...string) {
+	t.Helper()
+	re := regexp.MustCompile(`<input[^>]*\bname="` + regexp.QuoteMeta(name) + `"[^>]*>`)
+	tag := re.FindString(body)
+	if tag == "" {
+		t.Fatalf("页面缺少 name=%q 的密码输入框: %s", name, body)
+	}
+	if strings.Contains(tag, "value=") {
+		t.Fatalf("密码输入框 %q 不应包含 value: %s", name, tag)
+	}
+	for _, secret := range secrets {
+		if secret != "" && strings.Contains(body, secret) {
+			t.Fatalf("页面回显了密码明文 %q", secret)
+		}
+	}
+}
+
 func TestAdminRegistrationCodePageCollapsesUpdateAndDeletes(t *testing.T) {
 	store, _, admin := newWebStore(t)
 	srv, err := New(store)
