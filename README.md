@@ -134,7 +134,7 @@ make run
 | `REGISTRATION_CODE_SECRET` | 是 | 无 | 注册码 HMAC 密钥，**至少 16 字节**；轮换会使全部注册码失效 |
 | `ADMIN_INITIAL_PHONE` | 首次启动必填 | 无 | 初始管理员手机号（11 位）；仅当库中还没有管理员时使用 |
 | `ADMIN_INITIAL_PASSWORD` | 否 | `AA` | 初始管理员密码，1–19 字符；已有管理员时不会覆盖 |
-| `ADMIN_INITIAL_NAME` | 否 | `LOLPK` | 初始管理员用户名 |
+| `ADMIN_INITIAL_NAME` | 否 | `admin` | 初始管理员用户名 |
 | `APP_BASE_URL` | 否 | `http://127.0.0.1:8080` | 对外访问地址，用于二维码内容与绝对链接；必须以 `http://` 或 `https://` 开头 |
 | `APP_LISTEN` | 否 | `127.0.0.1:8080` | HTTP 监听地址；生产由 nginx 反代，不要直接暴露 |
 | `DB_PATH` | 否 | `leavepass.db` | SQLite 文件路径；启动时自动建目录、迁移并把文件权限设为 0600 |
@@ -208,7 +208,7 @@ sqlite3 /opt/leavepass/leavepass.db "VACUUM INTO '/opt/leavepass/backups/leavepa
 - 两个密钥都不要写进仓库、日志或截图；使用 `openssl rand -base64 32` 生成并保存在 `.env`（0600）。
 - 生产必须使用 HTTPS，并保持 `APP_INSECURE_COOKIES` 未设置（默认 Secure Cookie）。
 - 应用只监听 `127.0.0.1:8080`，由 nginx 终止 TLS 并反代；`APP_BASE_URL` 必须是外部可访问的 https 地址，否则二维码指向错误。
-- **Cloudflare 橙云（代理开启）时必须处理真实 IP**：在 nginx 配置 `real_ip_header CF-Connecting-IP` 与 Cloudflare 官方 `set_real_ip_from` 段，否则所有请求共享 Cloudflare 出口 IP，登录/注册限流会误伤全站。也可以把 DNS 改为 **DNS-only（灰云）** 直接回源，二者选其一。样例见 `deploy/nginx-leave.lolpk.icu.conf` 中注释块。
+- **Cloudflare 橙云（代理开启）时必须处理真实 IP**：在 nginx 配置 `real_ip_header CF-Connecting-IP` 与 Cloudflare 官方 `set_real_ip_from` 段，否则所有请求共享 Cloudflare 出口 IP，登录/注册限流会误伤全站。也可以把 DNS 改为 **DNS-only（灰云）** 直接回源，二者选其一。样例见 `deploy/nginx-leave.example.com.conf` 中注释块。
 - 注册码明文只显示一次，数据库只存 HMAC；不要通过公开渠道分发。
 - 学生导入文件只在内存解析、不落盘；请勿在模板中复用弱初始密码，并提醒学生首次登录后改密。
 - 门卫页 `/p/` 与代理页 `/a/` 不含联系电话与请假原因，nginx 样例关闭了这两个路径的 access log，请勿额外记录 token。
@@ -218,12 +218,12 @@ sqlite3 /opt/leavepass/leavepass.db "VACUUM INTO '/opt/leavepass/backups/leavepa
 样例文件已放在 `deploy/`，部署动作需在目标环境人工执行：
 
 - `deploy/leavepass.service`：systemd 单元样例（独立用户 `leavepass`、`/opt/leavepass`、`EnvironmentFile=/opt/leavepass/.env`、`Restart=always` 等加固项）。
-- `deploy/nginx-leave.lolpk.icu.conf`：`leave.lolpk.icu` 的 server block 样例（80→443、TLS 占位符、反代 `127.0.0.1:8080`、1MB 体积限制、导入路由 6MB、`/p/` 与 `/a/` 关闭日志、Cloudflare real_ip 注释块）。
+- `deploy/nginx-leave.example.com.conf`：`leave.example.com` 的 server block 样例（80→443、TLS 占位符、反代 `127.0.0.1:8080`、1MB 体积限制、导入路由 6MB、`/p/` 与 `/a/` 关闭日志、Cloudflare real_ip 注释块）。
 - `deploy/README.md`：部署前检查清单（DNS/证书、密钥生成、目录权限、systemd、`nginx -t`、备份定时器、real_ip 二选一）。
 
 建议顺序（每一步都需要人工确认后再执行）：
 
-1. 确认 `leave.lolpk.icu` 的 DNS 与证书（复用现有 Cloudflare Origin 通配符证书时，先验证覆盖该子域；橙云需配 real_ip，或改灰云）。
+1. 确认 `leave.example.com` 的 DNS 与证书（复用现有 Cloudflare Origin 通配符证书时，先验证覆盖该子域；橙云需配 real_ip，或改灰云）。
 2. 创建服务用户与目录：`/opt/leavepass`（二进制、`.env`、数据库、`backups/`）。
 3. 生成 `SESSION_SECRET`、`REGISTRATION_CODE_SECRET`，填写 `.env`（0600），首次部署务必设置 `ADMIN_INITIAL_PHONE`。
 4. 本机构建 `make build`，把 `bin/leavepass` 上传到 `/opt/leavepass/leavepass`。
@@ -250,7 +250,7 @@ sqlite3 /opt/leavepass/leavepass.db "VACUUM INTO '/opt/leavepass/backups/leavepa
 Copyright (C) 2026 1581lzh
 
 - 开源许可：[LICENSE](LICENSE)（AGPL-3.0 全文）。
-- 商业许可说明与联系方式：[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)，邮箱 **lolpk4134@qq.com**。
+- 商业许可说明与联系方式：[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)，邮箱 **license@example.com**。
 - 贡献授权（双许可所需）：[CONTRIBUTING.md](CONTRIBUTING.md)。
 - 第三方组件与许可证：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 - 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。

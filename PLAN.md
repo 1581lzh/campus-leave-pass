@@ -2,7 +2,7 @@
 
 > 状态：已实现；本文保留最初的设计决策与默认值，作为实现与后续变更的依据。
 > 部署目录：`/opt/leavepass`
-> 域名建议：`leave.lolpk.icu`（需先确认 DNS 与证书）
+> 域名建议：`leave.example.com`（需先确认 DNS 与证书）
 > 时区：`Asia/Shanghai`（服务器当前已是 CST）
 
 ---
@@ -156,7 +156,7 @@
 
 ### 2.4 管理员账号
 
-- 初始管理员：`LOLPK`，初始密码由环境变量 `ADMIN_INITIAL_PASSWORD` 提供，默认 `AA`；**初始手机号必须由 `ADMIN_INITIAL_PHONE` 提供，在教职工+管理员范围内唯一**。首次登录后应尽快改密。管理员忘记密码用“用户名 + 补全手机号”自助重置。
+- 初始管理员：`admin`，初始密码由环境变量 `ADMIN_INITIAL_PASSWORD` 提供，默认 `AA`；**初始手机号必须由 `ADMIN_INITIAL_PHONE` 提供，在教职工+管理员范围内唯一**。首次登录后应尽快改密。管理员忘记密码用“用户名 + 补全手机号”自助重置。
 - 新建管理员：由现有管理员在后台创建，默认密码 `AA`；**手机号必填且在教职工+管理员范围内唯一**。创建成功后提示对方首次登录后改密。忘记密码用“用户名 + 补全手机号”自助重置；手机号不可用时由另一位管理员在后台批准辅助重置。
 - **允许多个管理员**；管理员之间可互相辅助重置，避免唯一管理员锁死。
 - **不强制改密**。使用初始密码的账号在后台首页/个人资料显示一行小字：“当前仍在使用初始密码，建议尽快修改。” 不做弹窗、不拦截。
@@ -258,7 +258,7 @@
 
 ### 2.9 冷启动与日常流程
 
-1. **部署**：配置密钥、`ADMIN_INITIAL_PHONE`；seed `LOLPK` 管理员；不再 seed 学生码、教师码、辅导员码、社区码。
+1. **部署**：配置密钥、`ADMIN_INITIAL_PHONE`；seed `admin` 管理员；不再 seed 学生码、教师码、辅导员码、社区码。
 2. **管理员**：登录 `/admin` → 设置 → 注册码，分别生成班主任/辅导员/社区老师注册码，设置可用次数和有效期，私下分发。
 3. **教职工**：班主任/辅导员/社区老师用对应注册码 + 用户名 + 密码 + 手机号自助注册。
 4. **班级**：班主任创建班级 → 在班级设置中搜索并邀请辅导员 → 辅导员站内接受。班级必须同时有班主任和辅导员才能导入学生；不使用任何邀请码。
@@ -478,7 +478,7 @@
 ## 6. 二维码与门卫页
 
 - 仅“已批准”生成，一张假条一个 token。
-- 二维码内容：`https://leave.lolpk.icu/p/<token>`。
+- 二维码内容：`https://leave.example.com/p/<token>`。
 - 门卫页 `/p/<token>`：
   - 显示：学生姓名、学号、班级、宿舍、请假起止时间、当前状态（姓名可能重名，学号用于区分）。
   - **永远不显示联系电话**；不显示请假原因（隐私最小化）。
@@ -1067,7 +1067,7 @@ v1 不做独立 SPA API；所有业务走内部 service 层。后续要加 `/api
 - systemd 服务 `leavepass.service`，独立用户，`Restart=always`。
 - 监听 `127.0.0.1:8080`（当前未被占用）。
 - 环境变量：`APP_BASE_URL`、`SESSION_SECRET`、`REGISTRATION_CODE_SECRET`、`ADMIN_INITIAL_PASSWORD`、`ADMIN_INITIAL_PHONE`（**首次部署必填**）、`CAMPUS_BUILDINGS`（逗号分隔，可选）、`TZ=Asia/Shanghai`。v1 不配置 SMTP。
-- 启动时自动迁移、只 seed `LOLPK` 管理员（`password_is_initial=1`；首次部署且管理员不存在时，`ADMIN_INITIAL_PHONE` 必填，缺失则启动失败并提示配置；已有管理员时忽略该变量）。**不再 seed 学生码、教师码、辅导员码、社区码**。seed 必须幂等：已存在的账号不重置密码。
+- 启动时自动迁移、只 seed `admin` 管理员（`password_is_initial=1`；首次部署且管理员不存在时，`ADMIN_INITIAL_PHONE` 必填，缺失则启动失败并提示配置；已有管理员时忽略该变量）。**不再 seed 学生码、教师码、辅导员码、社区码**。seed 必须幂等：已存在的账号不重置密码。
 - `REGISTRATION_CODE_SECRET` 必须长期保存；轮换会使全部教职工注册码立即失效，只能由管理员重新生成。`SESSION_SECRET` 轮换会使 CSRF token、门卫二维码和重置限流键失效，但不会撤销已登录会话；需要强制下线时由该账号在个人资料页执行“退出其他设备”，或改密码清该账号全部会话。
 - 首次部署后，管理员必须登录后台“设置 → 注册码”生成班主任/辅导员/社区老师注册码并分发；系统不打印 bootstrap 码，避免绕过管理员。
 - 学生账号不在启动时创建，也不由系统生成；必须由班主任/辅导员导入。
@@ -1075,8 +1075,8 @@ v1 不做独立 SPA API；所有业务走内部 service 层。后续要加 `/api
 ### 14.3 nginx
 
 - 现有 nginx 已占 80/443，不装 Caddy。
-- 新增 `leave.lolpk.icu` server block，反代到 `127.0.0.1:8080`。
-- 复用现有 `lolpk.icu` 通配符 Cloudflare Origin 证书；部署前验证证书覆盖该子域。
+- 新增 `leave.example.com` server block，反代到 `127.0.0.1:8080`。
+- 复用现有 `example.com` 通配符 Cloudflare Origin 证书；部署前验证证书覆盖该子域。
 - `/p/`、`/a/` 关闭 access log；全局 body 限制 1MB；学生导入上传路由单独放宽到 6MB（应用层仍限制 5MB）。
 - 保留现有 Next.js（3005）和其他服务不动。
 - **Cloudflare 代理下的真实 IP**：若域名走 Cloudflare 橙云，nginx 必须配置 `real_ip_header CF-Connecting-IP` + `set_real_ip_from` Cloudflare 段，应用只信任 nginx 覆盖写入的 `X-Real-IP`；否则所有用户共享 Cloudflare 出口 IP，IP 限流和注册限额会误伤全站。也可改为 DNS-only（灰云）直接暴露源站 IP。部署前二选一。

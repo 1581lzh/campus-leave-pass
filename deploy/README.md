@@ -2,22 +2,22 @@
 
 本目录只包含 **样例文件与步骤说明**。当前仓库未执行任何部署：没有安装 systemd 单元、没有改 nginx、没有启动服务、没有创建 `/opt/leavepass`。
 
-部署目标：`/opt/leavepass`，域名 `leave.lolpk.icu`，应用监听 `127.0.0.1:8080`，nginx 终止 TLS 后反代。
+部署目标：`/opt/leavepass`，域名 `leave.example.com`，应用监听 `127.0.0.1:8080`，nginx 终止 TLS 后反代。
 
 样例文件：
 
 | 文件 | 用途 |
 | --- | --- |
 | `deploy/leavepass.service` | systemd 单元样例（用户 `leavepass`、`Restart=always`、`ProtectSystem=strict` 等） |
-| `deploy/nginx-leave.lolpk.icu.conf` | nginx server block 样例（80→443、证书占位符、反代、上传 6MB、`/p/` `/a/` 关闭日志、Cloudflare real_ip 注释块） |
+| `deploy/nginx-leave.example.com.conf` | nginx server block 样例（80→443、证书占位符、反代、上传 6MB、`/p/` `/a/` 关闭日志、Cloudflare real_ip 注释块） |
 | `deploy/README.md` | 本清单 |
 
 ## 1. 部署前确认（全部为人工操作）
 
-- [ ] **DNS**：`leave.lolpk.icu` 已解析到目标服务器；确认走 Cloudflare 橙云还是 DNS-only 灰云（见第 8 项）。
-- [ ] **证书**：确认现有 Cloudflare Origin 通配符证书覆盖 `leave.lolpk.icu`：
+- [ ] **DNS**：`leave.example.com` 已解析到目标服务器；确认走 Cloudflare 橙云还是 DNS-only 灰云（见第 8 项）。
+- [ ] **证书**：确认现有 Cloudflare Origin 通配符证书覆盖 `leave.example.com`：
       `openssl x509 -in <cert> -noout -text | grep -A1 "Subject Alternative Name"`。
-      把 `deploy/nginx-leave.lolpk.icu.conf` 中的 `CHANGE_ME_ORIGIN_CERT.pem` / `CHANGE_ME_ORIGIN_KEY.pem` 换成真实路径。
+      把 `deploy/nginx-leave.example.com.conf` 中的 `CHANGE_ME_ORIGIN_CERT.pem` / `CHANGE_ME_ORIGIN_KEY.pem` 换成真实路径。
 - [ ] **端口**：确认 `127.0.0.1:8080` 未被占用（`ss -ltnp | grep 8080`），且 80/443 仍由现有 nginx 使用。
 - [ ] **构建**：本机执行 `make build`，确认 `bin/leavepass` 生成；不要把 `go run` 或源码目录当生产运行方式。
 
@@ -42,7 +42,7 @@ openssl rand -base64 32   # REGISTRATION_CODE_SECRET
 
 - [ ] 以 `.env.example` 为模板创建 `/opt/leavepass/.env`，填入两个随机密钥（各至少 16 字节）。
 - [ ] **首次部署必须设置 `ADMIN_INITIAL_PHONE`**（11 位）；库中无管理员时缺失会导致启动失败。已有管理员后会忽略该变量。
-- [ ] 设置 `ADMIN_INITIAL_PASSWORD`（默认 `AA`，建议改掉）、`APP_BASE_URL=https://leave.lolpk.icu`、`APP_LISTEN=127.0.0.1:8080`、`DB_PATH=/opt/leavepass/leavepass.db`。
+- [ ] 设置 `ADMIN_INITIAL_PASSWORD`（默认 `AA`，建议改掉）、`APP_BASE_URL=https://leave.example.com`、`APP_LISTEN=127.0.0.1:8080`、`DB_PATH=/opt/leavepass/leavepass.db`。
 - [ ] 生产不要设置 `APP_INSECURE_COOKIES`（保持 Secure Cookie）；本地 HTTP 调试才用 `=1`。
 - [ ] 权限：`chown leavepass:leavepass /opt/leavepass/.env && chmod 0600 /opt/leavepass/.env`。
 - [ ] 两个密钥长期保存：`SESSION_SECRET` 轮换会使 CSRF/二维码/重置限流键失效，但不会撤销已登录会话；强制下线请用个人资料页“退出其他设备”或改密码。`REGISTRATION_CODE_SECRET` 轮换使全部注册码失效。
@@ -65,11 +65,11 @@ curl -fsS http://127.0.0.1:8080/healthz
 ## 5. nginx
 
 ```bash
-install -m 0644 deploy/nginx-leave.lolpk.icu.conf /etc/nginx/conf.d/leave.lolpk.icu.conf
+install -m 0644 deploy/nginx-leave.example.com.conf /etc/nginx/conf.d/leave.example.com.conf
 # 先替换证书占位符，再：
 nginx -t
 systemctl reload nginx
-curl -I https://leave.lolpk.icu/healthz
+curl -I https://leave.example.com/healthz
 ```
 
 - [ ] `nginx -t` 通过后才 reload；失败时不要强制重启。
@@ -105,7 +105,7 @@ find /opt/leavepass/backups -name 'leavepass-*.db' -mtime +7 -delete
 
 橙云（代理开启）时，源站看到的客户端 IP 是 Cloudflare 出口地址；不处理会导致所有用户共享同一 IP，登录/注册/IP 限流误伤全站。
 
-- **方案 A（橙云 + real_ip）**：在 nginx `http` 块启用 `deploy/nginx-leave.lolpk.icu.conf` 顶部注释的 `real_ip_header CF-Connecting-IP;` 与 `set_real_ip_from ...;`，按 <https://www.cloudflare.com/ips/> 的最新官方段填写，然后 `nginx -t && systemctl reload nginx`。
+- **方案 A（橙云 + real_ip）**：在 nginx `http` 块启用 `deploy/nginx-leave.example.com.conf` 顶部注释的 `real_ip_header CF-Connecting-IP;` 与 `set_real_ip_from ...;`，按 <https://www.cloudflare.com/ips/> 的最新官方段填写，然后 `nginx -t && systemctl reload nginx`。
 - **方案 B（灰云）**：把该子域 DNS 改为 DNS-only，直接回源；此时不要启用 Cloudflare real_ip 段，并确保源站防火墙只允许预期来源。
 
 应用只信任 nginx 覆盖写入的 `X-Real-IP`；不要直接把 8080 暴露到公网。
