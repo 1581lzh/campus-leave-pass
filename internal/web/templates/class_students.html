@@ -9,7 +9,7 @@
 <div class="card" id="import">
   <h2>导入学生</h2>
   {{if .CanImport}}
-  <p class="muted">仅支持 .xlsx，最大 5MB、500 行；导入全有或全无。请使用本站模板，避免第 4–7 列班级信息不一致。</p>
+  <p class="muted">仅支持 .xlsx，最大 5MB、500 行；导入全有或全无。请使用本站模板：打开后点击 Excel 窗口最下方的工作表标签「学生名单」填写，不要填在「填写说明」页；第 4–7 列由系统预填，请勿修改。</p>
   <form method="post" action="/t/classes/{{.Class.ID}}/students/import" enctype="multipart/form-data" class="rowform">
     {{template "csrf" .}}
     <label class="field grow"><span>学生名单 XLSX</span><input type="file" name="file" accept=".xlsx" required></label>

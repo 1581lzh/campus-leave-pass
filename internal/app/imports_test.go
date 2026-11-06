@@ -276,6 +276,20 @@ func TestImportStudentsPermissionAndTemplateAvailability(t *testing.T) {
 	if len(rows) < 2 || len(rows[0]) != 8 {
 		t.Fatalf("模板表头/预填行异常: %d 行，首行 %d 列", len(rows), len(rows[0]))
 	}
+	guideRows, err := f.GetRows("填写说明")
+	if err != nil {
+		t.Fatalf("读取填写说明: %v", err)
+	}
+	var guide strings.Builder
+	for _, row := range guideRows {
+		guide.WriteString(strings.Join(row, ""))
+		guide.WriteString("\n")
+	}
+	for _, want := range []string{"工作表标签", "学生名单", "第 2 行开始", "不要在本「填写说明」页填写"} {
+		if !strings.Contains(guide.String(), want) {
+			t.Fatalf("填写说明缺少 %q:\n%s", want, guide.String())
+		}
+	}
 
 	// 缺辅导员时模板和导入都必须明确拒绝并说明原因。换一位教师拥有该班，
 	// 避免触发“一个班主任只能有一个班”的换班确认。
