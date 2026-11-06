@@ -225,12 +225,21 @@ func (s *Server) teacherClassCreate(w http.ResponseWriter, r *http.Request) {
 	s.redirectFlash(w, r, "/t/classes/"+itoa(c.ID), "ok", "班级已创建。")
 }
 
+func (s *Server) claimableClasses(r *http.Request, u app.User) []app.Class {
+	if u.Role == "counselor" {
+		classes, _ := s.store.CounselorClaimableClasses(r.Context())
+		return classes
+	}
+	classes, _ := s.store.ClaimableClasses(r.Context())
+	return classes
+}
+
 func (s *Server) teacherClaimPage(w http.ResponseWriter, r *http.Request) {
-	_, ok := s.require(w, r, "teacher")
+	u, ok := s.require(w, r, "teacher", "counselor")
 	if !ok {
 		return
 	}
-	classes, _ := s.store.ClaimableClasses(r.Context())
+	classes := s.claimableClasses(r, u)
 	d := claimData{baseData: s.base(w, r, "class_claim", "认领班级"), Classes: classes,
 		Search: strings.TrimSpace(r.URL.Query().Get("q"))}
 	if d.Search != "" {
@@ -252,7 +261,7 @@ func (s *Server) renderClaim(w http.ResponseWriter, r *http.Request, status int,
 }
 
 func (s *Server) teacherClaimPost(w http.ResponseWriter, r *http.Request) {
-	u, ok := s.require(w, r, "teacher")
+	u, ok := s.require(w, r, "teacher", "counselor")
 	if !ok {
 		return
 	}
@@ -282,13 +291,19 @@ func (s *Server) teacherClaimPost(w http.ResponseWriter, r *http.Request) {
 	}
 	confirmTakeover := r.FormValue("confirm_takeover") == "1"
 	confirmSwitch := r.FormValue("confirm_switch") == "1"
-	if err := s.store.TakeClass(r.Context(), u, id, confirmTakeover, confirmSwitch); err != nil {
-		classes, _ := s.store.ClaimableClasses(r.Context())
+	var claimErr error
+	if u.Role == "counselor" {
+		claimErr = s.store.ClaimCounselorClass(r.Context(), u, id, confirmTakeover)
+	} else {
+		claimErr = s.store.TakeClass(r.Context(), u, id, confirmTakeover, confirmSwitch)
+	}
+	if claimErr != nil {
+		classes := s.claimableClasses(r, u)
 		c, _ := s.store.GetClass(r.Context(), id)
 		d := claimData{baseData: s.base(w, r, "class_claim", "认领班级"), Classes: classes,
-			Found: c, HasFound: c.ID != 0, Error: err.Error(),
-			TakeoverNeeded: errors.Is(err, app.ErrTakeoverNeeded),
-			SwitchNeeded:   errors.Is(err, app.ErrClassSwitchNeeded)}
+			Found: c, HasFound: c.ID != 0, Error: claimErr.Error(),
+			TakeoverNeeded: errors.Is(claimErr, app.ErrTakeoverNeeded) || errors.Is(claimErr, app.ErrCounselorTakeoverNeeded),
+			SwitchNeeded:   errors.Is(claimErr, app.ErrClassSwitchNeeded)}
 		status := http.StatusUnprocessableEntity
 		if d.TakeoverNeeded || d.SwitchNeeded {
 			status = http.StatusConflict
@@ -296,7 +311,11 @@ func (s *Server) teacherClaimPost(w http.ResponseWriter, r *http.Request) {
 		s.renderClaim(w, r, status, d)
 		return
 	}
-	s.redirectFlash(w, r, "/t/classes/"+itoa(id), "ok", "班级认领成功。")
+	msg := "班级认领成功。"
+	if u.Role == "counselor" {
+		msg = "班级认领成功，你已成为该班辅导员。"
+	}
+	s.redirectFlash(w, r, "/t/classes/"+itoa(id), "ok", msg)
 }
 
 type teacherLeaveNewData struct {

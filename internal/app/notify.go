@@ -3,7 +3,11 @@ package app
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
+	"time"
+
+	"leavepass/internal/config"
 )
 
 // Notify inserts one notification; userID<=0 is ignored.
@@ -21,6 +25,19 @@ func (s *Store) Notify(ctx context.Context, q queryer, userID int64, kind, title
 	_, err := q.ExecContext(ctx, `INSERT INTO notifications (user_id,kind,title,body,link,leave_id,created_at)
 		VALUES (?,?,?,?,?,?,?)`, userID, kind, title, body, link, leave, s.NowUnix())
 	return err
+}
+
+// notifyCounselorReplaced tells the previous counselor when, by whom and for
+// which class their counselor role was replaced. The timestamp is part of the
+// user-visible contract so the previous counselor can tell when the handover
+// happened.
+func (s *Store) notifyCounselorReplaced(ctx context.Context, q queryer, userID int64, className, detail string, now int64) error {
+	if userID <= 0 {
+		return nil
+	}
+	when := time.Unix(now, 0).In(config.Location).Format("2006-01-02 15:04")
+	body := fmt.Sprintf("%s，%s。你已不再是 %s 的辅导员。", when, detail, className)
+	return s.Notify(ctx, q, userID, "counselor_takeover", "你已被顶替", body, "/t/classes", 0)
 }
 
 // NotifyAdmins sends a notification to every administrator.

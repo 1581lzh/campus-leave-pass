@@ -23,11 +23,12 @@ const (
 
 // Sentinel errors surfaced with reasons in the UI.
 var (
-	ErrClassSwitchNeeded = errors.New("你已有一个班级，换班后原班将立即进入待认领并开始 7 天清理倒计时")
-	ErrTakeoverNeeded    = errors.New("该班已有班主任，确认后将顶替现任班主任")
-	ErrVersionConflict   = errors.New("班级信息已被他人修改，请刷新后重试")
-	ErrDormConflict      = errors.New("宿舍信息已被他人修改，请刷新后重试")
-	ErrForbidden         = errors.New("无权执行该操作")
+	ErrClassSwitchNeeded       = errors.New("你已有一个班级，换班后原班将立即进入待认领并开始 7 天清理倒计时")
+	ErrTakeoverNeeded          = errors.New("该班已有班主任，确认后将顶替现任班主任")
+	ErrCounselorTakeoverNeeded = errors.New("该班已有辅导员，确认后将顶替现任辅导员")
+	ErrVersionConflict         = errors.New("班级信息已被他人修改，请刷新后重试")
+	ErrDormConflict            = errors.New("宿舍信息已被他人修改，请刷新后重试")
+	ErrForbidden               = errors.New("无权执行该操作")
 )
 
 const classCols = `c.id, c.name, c.name_norm, c.department,
@@ -329,6 +330,69 @@ func (s *Store) ClaimableClasses(ctx context.Context) ([]Class, error) {
 		out = append(out, c)
 	}
 	return out, rows.Err()
+}
+
+// CounselorClaimableClasses lists classes without a counselor. A counselor can
+// still take over an occupied class through the exact-name search flow.
+func (s *Store) CounselorClaimableClasses(ctx context.Context) ([]Class, error) {
+	all, err := s.AllClasses(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Class, 0, len(all))
+	for _, c := range all {
+		if c.CounselorUserID == 0 {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
+// ClaimCounselorClass lets a counselor claim any class. A class keeps exactly
+// one counselor; a confirmed claim replaces the current one and notifies the
+// replaced counselor with the time, actor and class name.
+func (s *Store) ClaimCounselorClass(ctx context.Context, actor User, classID int64, confirmTakeover bool) error {
+	if actor.Role != "counselor" {
+		return errors.New("只有辅导员可以认领班级")
+	}
+	now := s.NowUnix()
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		var counselorID, teacherID int64
+		var counselorName, className string
+		err := tx.QueryRowContext(ctx, `SELECT COALESCE(c.counselor_user_id,0), COALESCE(co.username,''),
+			c.name, COALESCE(c.teacher_user_id,0)
+			FROM classes c LEFT JOIN users co ON co.id=c.counselor_user_id WHERE c.id=?`, classID).
+			Scan(&counselorID, &counselorName, &className, &teacherID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if counselorID == actor.ID {
+			return nil
+		}
+		if counselorID != 0 && !confirmTakeover {
+			return fmt.Errorf("%w（现任：%s）", ErrCounselorTakeoverNeeded, counselorName)
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE classes SET counselor_user_id=?, version=version+1, updated_at=? WHERE id=?`,
+			actor.ID, now, classID); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE class_counselor_requests SET status='cancelled', responded_at=?
+			WHERE class_id=? AND status='pending'`, now, classID); err != nil {
+			return err
+		}
+		if counselorID != 0 {
+			_ = s.notifyCounselorReplaced(ctx, tx, counselorID, className,
+				fmt.Sprintf("辅导员 %s 认领了 %s，顶替了你的辅导员岗位", actor.Username, className), now)
+		}
+		_ = s.Notify(ctx, tx, teacherID, "class_counselor", "班级辅导员已调整",
+			actor.Username+" 已认领 "+className+" 的辅导员岗位。", "/t/classes/"+itoa(classID), 0)
+		_ = s.Notify(ctx, tx, actor.ID, "class_counselor_claimed", "班级认领成功",
+			"你已成为 "+className+" 的辅导员。", "/t/classes/"+itoa(classID), 0)
+		return nil
+	})
 }
 
 // TakeClass lets a teacher claim an unclaimed class or take over an occupied
@@ -672,7 +736,8 @@ func (s *Store) RespondInvitation(ctx context.Context, actor User, inviteID int6
 			return err
 		}
 		if replacesID != 0 && replacesID != actor.ID {
-			_ = s.Notify(ctx, tx, replacesID, "counselor_takeover", "你已被顶替", actor.Username+" 已成为 "+className+" 的辅导员，你不再是该班辅导员。", "/t/classes", 0)
+			_ = s.notifyCounselorReplaced(ctx, tx, replacesID, className,
+				fmt.Sprintf("辅导员 %s 接受邀请成为 %s 的辅导员，顶替了你的辅导员岗位", actor.Username, className), now)
 		}
 		_ = s.Notify(ctx, tx, invitedBy, "counselor_invite_result", "辅导员已接受邀请", actor.Username+" 已接受 "+className+" 的辅导员邀请。", "/t/classes/"+itoa(classID), 0)
 		return nil
@@ -748,7 +813,8 @@ func (s *Store) AssignCounselor(ctx context.Context, admin User, classID, counse
 			return err
 		}
 		if c.CounselorUserID != 0 && c.CounselorUserID != counselorID {
-			_ = s.Notify(ctx, tx, c.CounselorUserID, "counselor_takeover", "你已被顶替", "管理员已将 "+c.Name+" 的辅导员改为 "+co.Username+"。", "/t/classes", 0)
+			_ = s.notifyCounselorReplaced(ctx, tx, c.CounselorUserID, c.Name,
+				fmt.Sprintf("管理员将 %s 的辅导员改为 %s，顶替了你的辅导员岗位", c.Name, co.Username), now)
 		}
 		_ = s.Notify(ctx, tx, counselorID, "class_assigned", "你被指派为辅导员", "管理员已指派你为 "+c.Name+" 的辅导员。", "/t/classes/"+itoa(classID), 0)
 		_ = s.Notify(ctx, tx, c.TeacherUserID, "class_counselor", "班级辅导员已调整", co.Username+" 现为 "+c.Name+" 的辅导员。", "/t/classes/"+itoa(classID), 0)

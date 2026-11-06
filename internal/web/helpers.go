@@ -50,7 +50,7 @@ func (s *Server) postFail(w http.ResponseWriter, r *http.Request, err error) {
 		status = http.StatusNotFound
 	case errors.Is(err, app.ErrVersionConflict), errors.Is(err, app.ErrDormConflict):
 		status = http.StatusConflict
-	case errors.Is(err, app.ErrTakeoverNeeded), errors.Is(err, app.ErrClassSwitchNeeded):
+	case errors.Is(err, app.ErrTakeoverNeeded), errors.Is(err, app.ErrCounselorTakeoverNeeded), errors.Is(err, app.ErrClassSwitchNeeded):
 		status = http.StatusConflict
 	}
 	msg := err.Error()

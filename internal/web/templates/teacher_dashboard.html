@@ -1,7 +1,7 @@
 {{define "content"}}
 <section class="page-head">
   <div><p class="eyebrow">教职工首页</p><h1>{{if eq .User.Role "counselor"}}辅导员工作台{{else}}班主任工作台{{end}}</h1><p class="muted">{{.User.Username}} · 当前角色：{{roleName .User.Role}}</p></div>
-  <div class="head-actions"><a class="btn" href="/t/classes">我的班级</a>{{if eq .User.Role "teacher"}}<a class="btn btn-primary" href="/t/classes/claim">认领班级</a>{{else}}<a class="btn btn-primary" href="/t/class-invitations">班级邀请</a>{{end}}</div>
+  <div class="head-actions"><a class="btn" href="/t/classes">我的班级</a>{{if eq .User.Role "teacher"}}<a class="btn btn-primary" href="/t/classes/claim">认领班级</a>{{else}}<a class="btn btn-primary" href="/t/classes/claim">认领班级</a><a class="btn" href="/t/class-invitations">班级邀请</a>{{end}}</div>
 </section>
 
 {{if .Classes}}
@@ -24,7 +24,7 @@
   {{end}}
 </div>
 {{else}}
-<div class="card"><p class="lead">你当前没有负责的班级。</p><p class="muted">{{if eq .User.Role "teacher"}}可以创建新班级，或认领一个待认领班级。{{else}}请等待班主任邀请，邀请会显示在“班级邀请”中。{{end}}</p><div class="actions">{{if eq .User.Role "teacher"}}<a class="btn btn-primary" href="/t/classes/new">创建班级</a><a class="btn" href="/t/classes/claim">认领班级</a>{{else}}<a class="btn btn-primary" href="/t/class-invitations">查看班级邀请</a>{{end}}</div></div>
+<div class="card"><p class="lead">你当前没有负责的班级。</p><p class="muted">{{if eq .User.Role "teacher"}}可以创建新班级，或认领一个待认领班级。{{else}}可以自行认领班级，也可以在“班级邀请”中接受班主任的邀请。{{end}}</p><div class="actions">{{if eq .User.Role "teacher"}}<a class="btn btn-primary" href="/t/classes/new">创建班级</a><a class="btn" href="/t/classes/claim">认领班级</a>{{else}}<a class="btn btn-primary" href="/t/classes/claim">认领班级</a><a class="btn" href="/t/class-invitations">查看班级邀请</a>{{end}}</div></div>
 {{end}}
 
 <div class="card">
